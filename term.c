@@ -44,9 +44,9 @@ static const uint32_t col256[] = {
 #define CHARSET_DEC_SPECIAL 1
 
 void term_context_reinit(struct term_context *ctx) {
-    ctx->scroll_enabled = true;
     ctx->tab_size = 8;
-    ctx->escape_offset = 0;
+    ctx->autoflush = true;
+    ctx->scroll_enabled = true;
     ctx->control_sequence = false;
     ctx->csi = false;
     ctx->escape = false;
@@ -55,18 +55,18 @@ void term_context_reinit(struct term_context *ctx) {
     ctx->bold = false;
     ctx->reverse_video = false;
     ctx->dec_private = false;
+    ctx->insert_mode = false;
+    ctx->g_select = 0;
+    ctx->charsets[0] = CHARSET_DEFAULT;
+    ctx->charsets[1] = CHARSET_DEC_SPECIAL;
+    ctx->current_charset = 0;
+    ctx->escape_offset = 0;
     ctx->esc_values_i = 0;
     ctx->saved_cursor_x = 0;
     ctx->saved_cursor_y = 0;
     ctx->current_primary = (size_t)-1;
-    ctx->insert_mode = false;
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
-    ctx->current_charset = 0;
-    ctx->g_select = 0;
-    ctx->charsets[0] = CHARSET_DEFAULT;
-    ctx->charsets[1] = CHARSET_DEC_SPECIAL;
-    ctx->autoflush = true;
 }
 
 static void term_putchar(struct term_context *ctx, uint8_t c);

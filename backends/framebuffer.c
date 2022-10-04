@@ -7,6 +7,22 @@
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
 
+static void fbterm_save_state(struct term_context *_ctx) {
+    struct fbterm_context *ctx = (void *)_ctx;
+    ctx->saved_state_text_fg = ctx->text_fg;
+    ctx->saved_state_text_bg = ctx->text_bg;
+    ctx->saved_state_cursor_x = ctx->cursor_x;
+    ctx->saved_state_cursor_y = ctx->cursor_y;
+}
+
+static void fbterm_restore_state(struct term_context *_ctx) {
+    struct fbterm_context *ctx = (void *)_ctx;
+    ctx->text_fg = ctx->saved_state_text_fg;
+    ctx->text_bg = ctx->saved_state_text_bg;
+    ctx->cursor_x = ctx->saved_state_cursor_x;
+    ctx->cursor_y = ctx->saved_state_cursor_y;
+}
+
 static void fbterm_swap_palette(struct term_context *_ctx) {
     struct fbterm_context *ctx = (void *)_ctx;
     uint32_t tmp = ctx->text_bg;
@@ -554,6 +570,8 @@ struct term_context *fbterm_init(
     _ctx->scroll = fbterm_scroll;
     _ctx->revscroll = fbterm_revscroll;
     _ctx->swap_palette = fbterm_swap_palette;
+    _ctx->save_state = fbterm_save_state;
+    _ctx->restore_state = fbterm_restore_state;
     _ctx->double_buffer_flush = fbterm_double_buffer_flush;
     _ctx->full_refresh = fbterm_full_refresh;
     _ctx->deinit = fbterm_deinit;

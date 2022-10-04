@@ -17,14 +17,10 @@
 #define TERM_CB_LINUX 80
 
 struct term_context {
-    size_t rows, cols;
+    /* internal use */
 
     size_t tab_size;
-
     bool autoflush;
-
-    bool in_bootloader;
-
     bool scroll_enabled;
     bool control_sequence;
     bool csi;
@@ -46,11 +42,15 @@ struct term_context {
     size_t scroll_top_margin;
     size_t scroll_bottom_margin;
     uint32_t esc_values[TERM_MAX_ESC_VALUES];
-
     bool saved_state_bold;
     bool saved_state_reverse_video;
     size_t saved_state_current_charset;
     size_t saved_state_current_primary;
+
+    /* to be set by backend */
+
+    size_t rows, cols;
+    bool in_bootloader;
 
     void (*raw_putchar)(struct term_context *, uint8_t c);
     void (*clear)(struct term_context *, bool move);
@@ -75,6 +75,8 @@ struct term_context {
     void (*double_buffer_flush)(struct term_context *);
     void (*full_refresh)(struct term_context *);
     void (*deinit)(struct term_context *, void (*)(void *, size_t));
+
+    /* to be set by client */
 
     void (*callback)(struct term_context *, uint64_t, uint64_t, uint64_t, uint64_t);
 };
