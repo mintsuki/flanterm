@@ -748,6 +748,7 @@ static void fbterm_deinit(struct term_context *_ctx, void (*_free)(void *, size_
     _free(ctx->queue, ctx->queue_size);
     _free(ctx->map, ctx->map_size);
     _free(ctx->canvas, ctx->canvas_size);
+    _free(ctx, sizeof(struct fbterm_context));
 }
 
 struct term_context *fbterm_init(
