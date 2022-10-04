@@ -534,6 +534,11 @@ struct term_context *fbterm_init(
 
     ctx->grid_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_char);
     ctx->grid = _malloc(ctx->grid_size);
+    for (size_t i = 0; i < _ctx->rows * _ctx->cols; i++) {
+        ctx->grid[i].c = ' ';
+        ctx->grid[i].fg = ctx->text_bg;
+        ctx->grid[i].bg = ctx->text_bg;
+    }
 
     ctx->queue_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_queue_item);
     ctx->queue = _malloc(ctx->queue_size);
@@ -577,9 +582,6 @@ struct term_context *fbterm_init(
     _ctx->deinit = fbterm_deinit;
 
     term_context_reinit(_ctx);
-
-    fbterm_clear(_ctx, true);
-    fbterm_full_refresh(_ctx);
 
     return _ctx;
 }
