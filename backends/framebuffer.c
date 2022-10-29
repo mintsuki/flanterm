@@ -891,9 +891,11 @@ struct term_context *fbterm_init(
     ctx->queue_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_queue_item);
     ctx->queue = _malloc(ctx->queue_size);
     ctx->queue_i = 0;
+    memset(ctx->queue, 0, ctx->queue_size);
 
     ctx->map_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_queue_item *);
     ctx->map = _malloc(ctx->map_size);
+    memset(ctx->map, 0, ctx->map_size);
 
     ctx->canvas_size = ctx->width * ctx->height * sizeof(uint32_t);
     ctx->canvas = _malloc(ctx->canvas_size);
