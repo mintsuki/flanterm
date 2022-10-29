@@ -718,7 +718,7 @@ is_csi:
         case ')':
             ctx->g_select = c - '\'';
             break;
-        case '\e':
+        case 0x1b:
             if (ctx->in_bootloader == true) {
                 ctx->raw_putchar(ctx, c);
             }
@@ -800,7 +800,7 @@ static void term_putchar(struct term_context *ctx, uint8_t c) {
         case 0x9b:
             ctx->csi = true;
             // FALLTHRU
-        case '\e':
+        case 0x1b:
             ctx->escape_offset = 0;
             ctx->escape = true;
             return;
