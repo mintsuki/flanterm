@@ -1,6 +1,10 @@
 #ifndef _TERM_FRAMEBUFFER_H
 #define _TERM_FRAMEBUFFER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -87,5 +91,9 @@ struct term_context *fbterm_init(
     size_t font_scale_x, size_t font_scale_y,
     size_t margin
 );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

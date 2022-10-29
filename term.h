@@ -1,6 +1,10 @@
 #ifndef _TERM_H
 #define _TERM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -83,5 +87,9 @@ struct term_context {
 
 void term_context_reinit(struct term_context *ctx);
 void term_write(struct term_context *ctx, const char *buf, size_t count);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
