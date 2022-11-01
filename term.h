@@ -29,9 +29,12 @@ struct term_context {
     bool control_sequence;
     bool csi;
     bool escape;
+    bool osc;
+    bool osc_escape;
     bool rrr;
     bool discard_next;
     bool bold;
+    bool bg_bold;
     bool reverse_video;
     bool dec_private;
     bool insert_mode;
@@ -43,13 +46,16 @@ struct term_context {
     size_t saved_cursor_x;
     size_t saved_cursor_y;
     size_t current_primary;
+    size_t current_bg;
     size_t scroll_top_margin;
     size_t scroll_bottom_margin;
     uint32_t esc_values[TERM_MAX_ESC_VALUES];
     bool saved_state_bold;
+    bool saved_state_bg_bold;
     bool saved_state_reverse_video;
     size_t saved_state_current_charset;
     size_t saved_state_current_primary;
+    size_t saved_state_current_bg;
 
     /* to be set by backend */
 

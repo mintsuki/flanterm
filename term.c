@@ -50,9 +50,12 @@ void term_context_reinit(struct term_context *ctx) {
     ctx->control_sequence = false;
     ctx->csi = false;
     ctx->escape = false;
+    ctx->osc = false;
+    ctx->osc_escape = false;
     ctx->rrr = false;
     ctx->discard_next = false;
     ctx->bold = false;
+    ctx->bg_bold = false;
     ctx->reverse_video = false;
     ctx->dec_private = false;
     ctx->insert_mode = false;
@@ -65,6 +68,7 @@ void term_context_reinit(struct term_context *ctx) {
     ctx->saved_cursor_x = 0;
     ctx->saved_cursor_y = 0;
     ctx->current_primary = (size_t)-1;
+    ctx->current_bg = (size_t)-1;
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
 }
@@ -97,7 +101,9 @@ def:
                 ctx->swap_palette(ctx);
             }
             ctx->bold = false;
+            ctx->bg_bold = false;
             ctx->current_primary = (size_t)-1;
+            ctx->current_bg = (size_t)-1;
             ctx->set_text_bg_default(ctx);
             ctx->set_text_fg_default(ctx);
             continue;
@@ -115,6 +121,18 @@ def:
             continue;
         }
 
+        else if (ctx->esc_values[i] == 5) {
+            ctx->bg_bold = true;
+            if (ctx->current_bg != (size_t)-1) {
+                if (!ctx->reverse_video) {
+                    ctx->set_text_bg_bright(ctx, ctx->current_bg);
+                } else {
+                    ctx->set_text_fg_bright(ctx, ctx->current_bg);
+                }
+            }
+            continue;
+        }
+
         else if (ctx->esc_values[i] == 22) {
             ctx->bold = false;
             if (ctx->current_primary != (size_t)-1) {
@@ -122,6 +140,18 @@ def:
                     ctx->set_text_fg(ctx, ctx->current_primary);
                 } else {
                     ctx->set_text_bg(ctx, ctx->current_primary);
+                }
+            }
+            continue;
+        }
+
+        else if (ctx->esc_values[i] == 25) {
+            ctx->bg_bold = false;
+            if (ctx->current_bg != (size_t)-1) {
+                if (!ctx->reverse_video) {
+                    ctx->set_text_bg(ctx, ctx->current_bg);
+                } else {
+                    ctx->set_text_fg(ctx, ctx->current_bg);
                 }
             }
             continue;
@@ -136,7 +166,8 @@ def:
             }
 
 set_fg:
-            if (ctx->bold && !ctx->reverse_video) {
+            if ((ctx->bold && !ctx->reverse_video)
+             || (ctx->bg_bold && ctx->reverse_video)) {
                 ctx->set_text_fg_bright(ctx, ctx->esc_values[i] - offset);
             } else {
                 ctx->set_text_fg(ctx, ctx->esc_values[i] - offset);
@@ -146,12 +177,15 @@ set_fg:
 
         else if (ctx->esc_values[i] >= 40 && ctx->esc_values[i] <= 47) {
             offset = 40;
+            ctx->current_bg = ctx->esc_values[i] - offset;
+
             if (ctx->reverse_video) {
                 goto set_fg;
             }
 
 set_bg:
-            if (ctx->bold && ctx->reverse_video) {
+            if ((ctx->bold && ctx->reverse_video)
+             || (ctx->bg_bold && !ctx->reverse_video)) {
                 ctx->set_text_bg_bright(ctx, ctx->esc_values[i] - offset);
             } else {
                 ctx->set_text_bg(ctx, ctx->esc_values[i] - offset);
@@ -174,6 +208,8 @@ set_fg_bright:
 
         else if (ctx->esc_values[i] >= 100 && ctx->esc_values[i] <= 107) {
             offset = 100;
+            ctx->current_bg = ctx->esc_values[i] - offset;
+
             if (ctx->reverse_video) {
                 goto set_fg_bright;
             }
@@ -200,6 +236,8 @@ set_bg_bright:
         }
 
         else if (ctx->esc_values[i] == 49) {
+            ctx->current_bg = (size_t)-1;
+
             if (ctx->reverse_video) {
                 ctx->swap_palette(ctx);
             }
@@ -354,6 +392,29 @@ static void mode_toggle(struct term_context *ctx, uint8_t c) {
     }
 }
 
+static void osc_parse(struct term_context *ctx, uint8_t c) {
+    if (ctx->osc_escape && c == '\\') {
+        goto cleanup;
+    }
+
+    ctx->osc_escape = false;
+
+    switch (c) {
+        case 0x1b:
+            ctx->osc_escape = true;
+            break;
+        case '\a':
+            goto cleanup;
+    }
+
+    return;
+
+cleanup:
+    ctx->osc_escape = false;
+    ctx->osc = false;
+    ctx->escape = false;
+}
+
 static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
     if (ctx->escape_offset == 2) {
         switch (c) {
@@ -491,6 +552,20 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
                 ctx->esc_values[0] = ctx->rows - 1;
             ctx->set_cursor_pos(ctx, ctx->esc_values[1], ctx->esc_values[0]);
             break;
+        case 'M':
+            for (size_t i = 0; i < ctx->esc_values[0]; i++) {
+                ctx->scroll(ctx);
+            }
+            break;
+        case 'L': {
+            size_t old_scroll_top_margin = ctx->scroll_top_margin;
+            ctx->scroll_top_margin = y + 1;
+            for (size_t i = 0; i < ctx->esc_values[0]; i++) {
+                ctx->revscroll(ctx);
+            }
+            ctx->scroll_top_margin = old_scroll_top_margin;
+            break;
+        }
         case 'n':
             switch (ctx->esc_values[0]) {
                 case 5:
@@ -515,7 +590,7 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
                 case 0: {
                     size_t rows_remaining = ctx->rows - (y + 1);
                     size_t cols_diff = ctx->cols - (x + 1);
-                    size_t to_clear = rows_remaining * ctx->cols + cols_diff;
+                    size_t to_clear = rows_remaining * ctx->cols + cols_diff + 1;
                     for (size_t i = 0; i < to_clear; i++) {
                         ctx->raw_putchar(ctx, ' ');
                     }
@@ -633,9 +708,11 @@ cleanup:
 
 static void restore_state(struct term_context *ctx) {
     ctx->bold = ctx->saved_state_bold;
+    ctx->bg_bold = ctx->saved_state_bg_bold;
     ctx->reverse_video = ctx->saved_state_reverse_video;
     ctx->current_charset = ctx->saved_state_current_charset;
     ctx->current_primary = ctx->saved_state_current_primary;
+    ctx->current_bg = ctx->saved_state_current_bg;
 
     ctx->restore_state(ctx);
 }
@@ -644,13 +721,20 @@ static void save_state(struct term_context *ctx) {
     ctx->save_state(ctx);
 
     ctx->saved_state_bold = ctx->bold;
+    ctx->saved_state_bg_bold = ctx->bg_bold;
     ctx->saved_state_reverse_video = ctx->reverse_video;
     ctx->saved_state_current_charset = ctx->current_charset;
     ctx->saved_state_current_primary = ctx->current_primary;
+    ctx->saved_state_current_bg = ctx->current_bg;
 }
 
 static void escape_parse(struct term_context *ctx, uint8_t c) {
     ctx->escape_offset++;
+
+    if (ctx->osc == true) {
+        osc_parse(ctx, c);
+        return;
+    }
 
     if (ctx->control_sequence == true) {
         control_sequence_parse(ctx, c);
@@ -666,6 +750,10 @@ static void escape_parse(struct term_context *ctx, uint8_t c) {
     ctx->get_cursor_pos(ctx, &x, &y);
 
     switch (c) {
+        case ']':
+            ctx->osc_escape = false;
+            ctx->osc = true;
+            return;
         case '[':
 is_csi:
             for (size_t i = 0; i < TERM_MAX_ESC_VALUES; i++)
@@ -769,6 +857,8 @@ static void term_putchar(struct term_context *ctx, uint8_t c) {
         ctx->escape = false;
         ctx->csi = false;
         ctx->control_sequence = false;
+        ctx->osc = false;
+        ctx->osc_escape = false;
         ctx->g_select = 0;
         return;
     }
