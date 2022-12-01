@@ -59,6 +59,7 @@ void term_context_reinit(struct term_context *ctx) {
     ctx->reverse_video = false;
     ctx->dec_private = false;
     ctx->insert_mode = false;
+    ctx->unicode_remaining = 0;
     ctx->g_select = 0;
     ctx->charsets[0] = CHARSET_DEFAULT;
     ctx->charsets[1] = CHARSET_DEC_SPECIAL;
@@ -851,15 +852,219 @@ static uint8_t dec_special_to_cp437(uint8_t c) {
     return c;
 }
 
+static int unicode_to_cp437(uint64_t code_point) {
+    switch (code_point) {
+        case 0x263a: return 1;
+        case 0x263b: return 2;
+        case 0x2665: return 3;
+        case 0x2666: return 4;
+        case 0x2663: return 5;
+        case 0x2660: return 6;
+        case 0x2022: return 7;
+        case 0x25d8: return 8;
+        case 0x25cb: return 9;
+        case 0x25d9: return 10;
+        case 0x2642: return 11;
+        case 0x2640: return 12;
+        case 0x266a: return 13;
+        case 0x266b: return 14;
+        case 0x263c: return 15;
+        case 0x25ba: return 16;
+        case 0x25c4: return 17;
+        case 0x2195: return 18;
+        case 0x203c: return 19;
+        case 0x00b6: return 20;
+        case 0x00a7: return 21;
+        case 0x25ac: return 22;
+        case 0x21a8: return 23;
+        case 0x2191: return 24;
+        case 0x2193: return 25;
+        case 0x2192: return 26;
+        case 0x2190: return 27;
+        case 0x221f: return 28;
+        case 0x2194: return 29;
+        case 0x25b2: return 30;
+        case 0x25bc: return 31;
+
+        case 0x2302: return 127;
+        case 0x00c7: return 128;
+        case 0x00fc: return 129;
+        case 0x00e9: return 130;
+        case 0x00e2: return 131;
+        case 0x00e4: return 132;
+        case 0x00e0: return 133;
+        case 0x00e5: return 134;
+        case 0x00e7: return 135;
+        case 0x00ea: return 136;
+        case 0x00eb: return 137;
+        case 0x00e8: return 138;
+        case 0x00ef: return 139;
+        case 0x00ee: return 140;
+        case 0x00ec: return 141;
+        case 0x00c4: return 142;
+        case 0x00c5: return 143;
+        case 0x00c9: return 144;
+        case 0x00e6: return 145;
+        case 0x00c6: return 146;
+        case 0x00f4: return 147;
+        case 0x00f6: return 148;
+        case 0x00f2: return 149;
+        case 0x00fb: return 150;
+        case 0x00f9: return 151;
+        case 0x00ff: return 152;
+        case 0x00d6: return 153;
+        case 0x00dc: return 154;
+        case 0x00a2: return 155;
+        case 0x00a3: return 156;
+        case 0x00a5: return 157;
+        case 0x20a7: return 158;
+        case 0x0192: return 159;
+        case 0x00e1: return 160;
+        case 0x00ed: return 161;
+        case 0x00f3: return 162;
+        case 0x00fa: return 163;
+        case 0x00f1: return 164;
+        case 0x00d1: return 165;
+        case 0x00aa: return 166;
+        case 0x00ba: return 167;
+        case 0x00bf: return 168;
+        case 0x2310: return 169;
+        case 0x00ac: return 170;
+        case 0x00bd: return 171;
+        case 0x00bc: return 172;
+        case 0x00a1: return 173;
+        case 0x00ab: return 174;
+        case 0x00bb: return 175;
+        case 0x2591: return 176;
+        case 0x2592: return 177;
+        case 0x2593: return 178;
+        case 0x2502: return 179;
+        case 0x2524: return 180;
+        case 0x2561: return 181;
+        case 0x2562: return 182;
+        case 0x2556: return 183;
+        case 0x2555: return 184;
+        case 0x2563: return 185;
+        case 0x2551: return 186;
+        case 0x2557: return 187;
+        case 0x255d: return 188;
+        case 0x255c: return 189;
+        case 0x255b: return 190;
+        case 0x2510: return 191;
+        case 0x2514: return 192;
+        case 0x2534: return 193;
+        case 0x252c: return 194;
+        case 0x251c: return 195;
+        case 0x2500: return 196;
+        case 0x253c: return 197;
+        case 0x255e: return 198;
+        case 0x255f: return 199;
+        case 0x255a: return 200;
+        case 0x2554: return 201;
+        case 0x2569: return 202;
+        case 0x2566: return 203;
+        case 0x2560: return 204;
+        case 0x2550: return 205;
+        case 0x256c: return 206;
+        case 0x2567: return 207;
+        case 0x2568: return 208;
+        case 0x2564: return 209;
+        case 0x2565: return 210;
+        case 0x2559: return 211;
+        case 0x2558: return 212;
+        case 0x2552: return 213;
+        case 0x2553: return 214;
+        case 0x256b: return 215;
+        case 0x256a: return 216;
+        case 0x2518: return 217;
+        case 0x250c: return 218;
+        case 0x2588: return 219;
+        case 0x2584: return 220;
+        case 0x258c: return 221;
+        case 0x2590: return 222;
+        case 0x2580: return 223;
+        case 0x03b1: return 224;
+        case 0x00df: return 225;
+        case 0x0393: return 226;
+        case 0x03c0: return 227;
+        case 0x03a3: return 228;
+        case 0x03c3: return 229;
+        case 0x00b5: return 230;
+        case 0x03c4: return 231;
+        case 0x03a6: return 232;
+        case 0x0398: return 233;
+        case 0x03a9: return 234;
+        case 0x03b4: return 235;
+        case 0x221e: return 236;
+        case 0x03c6: return 237;
+        case 0x03b5: return 238;
+        case 0x2229: return 239;
+        case 0x2261: return 240;
+        case 0x00b1: return 241;
+        case 0x2265: return 242;
+        case 0x2264: return 243;
+        case 0x2320: return 244;
+        case 0x2321: return 245;
+        case 0x00f7: return 246;
+        case 0x2248: return 247;
+        case 0x00b0: return 248;
+        case 0x2219: return 249;
+        case 0x00b7: return 250;
+        case 0x221a: return 251;
+        case 0x207f: return 252;
+        case 0x00b2: return 253;
+        case 0x25a0: return 254;
+    }
+
+    return -1;
+}
+
 static void term_putchar(struct term_context *ctx, uint8_t c) {
     if (ctx->discard_next || (ctx->in_bootloader == false && (c == 0x18 || c == 0x1a))) {
         ctx->discard_next = false;
         ctx->escape = false;
         ctx->csi = false;
         ctx->control_sequence = false;
+        ctx->unicode_remaining = 0;
         ctx->osc = false;
         ctx->osc_escape = false;
         ctx->g_select = 0;
+        return;
+    }
+
+    if (ctx->unicode_remaining != 0) {
+        ctx->unicode_remaining--;
+        ctx->code_point |= (c & 0x3f) << (6 * ctx->unicode_remaining);
+        if (ctx->unicode_remaining != 0) {
+            return;
+        }
+
+        int cc = unicode_to_cp437(ctx->code_point);
+
+        if (cc == -1) {
+            //for (size_t i = 0; i < ctx->unicode_width; i++) {
+                ctx->raw_putchar(ctx, 8);
+            //}
+        } else {
+            ctx->raw_putchar(ctx, cc);
+        }
+        return;
+    }
+
+    if (c > 0x7f && ctx->in_bootloader == false) {
+        if (c >= 0xc0 && c <= 0xdf) {
+            ctx->unicode_width = 2;
+            ctx->unicode_remaining = 1;
+            ctx->code_point = (c & 0x1f) << 6;
+        } else if (c >= 0xe0 && c <= 0xef) {
+            ctx->unicode_width = 3;
+            ctx->unicode_remaining = 2;
+            ctx->code_point = (c & 0x0f) << (6 * 2);
+        } else if (c >= 0xf0 && c <= 0xf7) {
+            ctx->unicode_width = 4;
+            ctx->unicode_remaining = 3;
+            ctx->code_point = (c & 0x07) << (6 * 3);
+        }
         return;
     }
 
@@ -948,6 +1153,7 @@ static void term_putchar(struct term_context *ctx, uint8_t c) {
             break;
         case CHARSET_DEC_SPECIAL:
             c = dec_special_to_cp437(c);
+            break;
     }
 
     ctx->raw_putchar(ctx, c);
