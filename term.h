@@ -39,7 +39,6 @@ struct term_context {
     bool dec_private;
     bool insert_mode;
     uint64_t code_point;
-    size_t unicode_width;
     size_t unicode_remaining;
     uint8_t g_select;
     uint8_t charsets[2];

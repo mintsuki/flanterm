@@ -1155,7 +1155,8 @@ static void term_putchar(struct term_context *ctx, uint8_t c) {
         int cc = unicode_to_cp437(ctx->code_point);
 
         if (cc == -1) {
-            for (size_t i = 0; i < mk_wcwidth(ctx->code_point); i++) {
+            size_t replacement_width = mk_wcwidth(ctx->code_point);
+            for (size_t i = 0; i < replacement_width; i++) {
                 ctx->raw_putchar(ctx, 8);
             }
         } else {
@@ -1166,15 +1167,12 @@ static void term_putchar(struct term_context *ctx, uint8_t c) {
 
     if (c > 0x7f && ctx->in_bootloader == false) {
         if (c >= 0xc0 && c <= 0xdf) {
-            ctx->unicode_width = 2;
             ctx->unicode_remaining = 1;
             ctx->code_point = (c & 0x1f) << 6;
         } else if (c >= 0xe0 && c <= 0xef) {
-            ctx->unicode_width = 3;
             ctx->unicode_remaining = 2;
             ctx->code_point = (c & 0x0f) << (6 * 2);
         } else if (c >= 0xf0 && c <= 0xf7) {
-            ctx->unicode_width = 4;
             ctx->unicode_remaining = 3;
             ctx->code_point = (c & 0x07) << (6 * 3);
         }
