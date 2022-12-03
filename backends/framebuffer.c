@@ -467,7 +467,8 @@ static void push_to_queue(struct term_context *_ctx, struct fbterm_char *c, size
 static void fbterm_revscroll(struct term_context *_ctx) {
     struct fbterm_context *ctx = (void *)_ctx;
 
-    for (size_t i = (_ctx->scroll_bottom_margin - 1) * _ctx->cols - 1; ; i--) {
+    for (size_t i = (_ctx->scroll_bottom_margin - 1) * _ctx->cols - 1;
+         i > (_ctx->scroll_top_margin + 1) * _ctx->cols; i--) {
         struct fbterm_char *c;
         struct fbterm_queue_item *q = ctx->map[i];
         if (q != NULL) {
@@ -476,9 +477,6 @@ static void fbterm_revscroll(struct term_context *_ctx) {
             c = &ctx->grid[i];
         }
         push_to_queue(_ctx, c, (i + _ctx->cols) % _ctx->cols, (i + _ctx->cols) / _ctx->cols);
-        if (i == _ctx->scroll_top_margin * _ctx->cols) {
-            break;
-        }
     }
 
     // Clear the first line of the screen.
@@ -650,6 +648,11 @@ static void draw_cursor(struct term_context *_ctx) {
     struct fbterm_context *ctx = (void *)_ctx;
 
     size_t i = ctx->cursor_x + ctx->cursor_y * _ctx->cols;
+
+    if (i >= _ctx->cols * _ctx->rows) {
+        return;
+    }
+
     struct fbterm_char c;
     struct fbterm_queue_item *q = ctx->map[i];
     if (q != NULL) {
