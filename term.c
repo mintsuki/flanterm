@@ -856,8 +856,8 @@ static uint8_t dec_special_to_cp437(uint8_t c) {
 // https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 
 struct interval {
-  int first;
-  int last;
+  wchar_t first;
+  wchar_t last;
 };
 
 /* auxiliary function for binary search in interval table */
