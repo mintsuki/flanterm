@@ -560,7 +560,7 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
             break;
         case 'L': {
             size_t old_scroll_top_margin = ctx->scroll_top_margin;
-            ctx->scroll_top_margin = y + 1;
+            ctx->scroll_top_margin = y;
             for (size_t i = 0; i < ctx->esc_values[0]; i++) {
                 ctx->revscroll(ctx);
             }
