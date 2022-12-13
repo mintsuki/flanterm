@@ -468,7 +468,10 @@ static void fbterm_revscroll(struct term_context *_ctx) {
     struct fbterm_context *ctx = (void *)_ctx;
 
     for (size_t i = (_ctx->scroll_bottom_margin - 1) * _ctx->cols - 1;
-         i > (_ctx->scroll_top_margin + 1) * _ctx->cols; i--) {
+         i >= _ctx->scroll_top_margin * _ctx->cols; i--) {
+        if (i == (size_t)-1) {
+            break;
+        }
         struct fbterm_char *c;
         struct fbterm_queue_item *q = ctx->map[i];
         if (q != NULL) {
