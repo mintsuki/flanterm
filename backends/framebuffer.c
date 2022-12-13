@@ -487,9 +487,8 @@ static void fbterm_revscroll(struct term_context *_ctx) {
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
-    for (size_t i = _ctx->scroll_top_margin * _ctx->cols;
-         i < (_ctx->scroll_top_margin + 1) * _ctx->cols; i++) {
-        push_to_queue(_ctx, &empty, i % _ctx->cols, i / _ctx->cols);
+    for (size_t i = 0; i < _ctx->cols; i++) {
+        push_to_queue(_ctx, &empty, i, _ctx->scroll_top_margin);
     }
 }
 
@@ -513,9 +512,8 @@ static void fbterm_scroll(struct term_context *_ctx) {
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
-    for (size_t i = (_ctx->scroll_bottom_margin - 1) * _ctx->cols;
-         i < _ctx->scroll_bottom_margin * _ctx->cols; i++) {
-        push_to_queue(_ctx, &empty, i % _ctx->cols, i / _ctx->cols);
+    for (size_t i = 0; i < _ctx->cols; i++) {
+        push_to_queue(_ctx, &empty, i, _ctx->scroll_bottom_margin - 1);
     }
 }
 
