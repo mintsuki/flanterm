@@ -78,6 +78,8 @@ struct term_context {
     void (*set_text_bg_rgb)(struct term_context *, uint32_t bg);
     void (*set_text_fg_default)(struct term_context *);
     void (*set_text_bg_default)(struct term_context *);
+    void (*set_text_fg_default_bright)(struct term_context *);
+    void (*set_text_bg_default_bright)(struct term_context *);
     void (*move_character)(struct term_context *, size_t new_x, size_t new_y, size_t old_x, size_t old_y);
     void (*scroll)(struct term_context *);
     void (*revscroll)(struct term_context *);

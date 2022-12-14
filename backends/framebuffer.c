@@ -645,6 +645,18 @@ static void fbterm_set_text_bg_default(struct term_context *_ctx) {
     ctx->text_bg = 0xffffffff;
 }
 
+static void fbterm_set_text_fg_default_bright(struct term_context *_ctx) {
+    struct fbterm_context *ctx = (void *)_ctx;
+
+    ctx->text_fg = ctx->default_fg_bright;
+}
+
+static void fbterm_set_text_bg_default_bright(struct term_context *_ctx) {
+    struct fbterm_context *ctx = (void *)_ctx;
+
+    ctx->text_bg = ctx->default_bg_bright;
+}
+
 static void draw_cursor(struct term_context *_ctx) {
     struct fbterm_context *ctx = (void *)_ctx;
 
@@ -764,6 +776,7 @@ struct term_context *fbterm_init(
     uint32_t *canvas,
     uint32_t *ansi_colours, uint32_t *ansi_bright_colours,
     uint32_t *default_bg, uint32_t *default_fg,
+    uint32_t *default_bg_bright, uint32_t *default_fg_bright,
     void *font, size_t font_width, size_t font_height, size_t font_spacing,
     size_t font_scale_x, size_t font_scale_y,
     size_t margin
@@ -812,6 +825,18 @@ struct term_context *fbterm_init(
         ctx->default_fg = *default_fg;
     } else {
         ctx->default_fg = 0x00aaaaaa; // foreground (grey)
+    }
+
+    if (default_bg_bright != NULL) {
+        ctx->default_bg_bright = *default_bg_bright;
+    } else {
+        ctx->default_bg_bright = 0x00555555; // background (black)
+    }
+
+    if (default_fg_bright != NULL) {
+        ctx->default_fg_bright = *default_fg_bright;
+    } else {
+        ctx->default_fg_bright = 0x00ffffff; // foreground (grey)
     }
 
     ctx->text_fg = ctx->default_fg;
@@ -928,6 +953,8 @@ struct term_context *fbterm_init(
     _ctx->set_text_bg_rgb = fbterm_set_text_bg_rgb;
     _ctx->set_text_fg_default = fbterm_set_text_fg_default;
     _ctx->set_text_bg_default = fbterm_set_text_bg_default;
+    _ctx->set_text_fg_default_bright = fbterm_set_text_fg_default_bright;
+    _ctx->set_text_bg_default_bright = fbterm_set_text_bg_default_bright;
     _ctx->move_character = fbterm_move_character;
     _ctx->scroll = fbterm_scroll;
     _ctx->revscroll = fbterm_revscroll;

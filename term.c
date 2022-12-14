@@ -118,6 +118,12 @@ def:
                 } else {
                     ctx->set_text_bg_bright(ctx, ctx->current_primary);
                 }
+            } else {
+                if (!ctx->reverse_video) {
+                    ctx->set_text_fg_default_bright(ctx);
+                } else {
+                    ctx->set_text_bg_default_bright(ctx);
+                }
             }
             continue;
         }
@@ -129,6 +135,12 @@ def:
                     ctx->set_text_bg_bright(ctx, ctx->current_bg);
                 } else {
                     ctx->set_text_fg_bright(ctx, ctx->current_bg);
+                }
+            } else {
+                if (!ctx->reverse_video) {
+                    ctx->set_text_bg_default_bright(ctx);
+                } else {
+                    ctx->set_text_fg_default_bright(ctx);
                 }
             }
             continue;
@@ -142,6 +154,12 @@ def:
                 } else {
                     ctx->set_text_bg(ctx, ctx->current_primary);
                 }
+            } else {
+                if (!ctx->reverse_video) {
+                    ctx->set_text_fg_default(ctx);
+                } else {
+                    ctx->set_text_bg_default(ctx);
+                }
             }
             continue;
         }
@@ -153,6 +171,12 @@ def:
                     ctx->set_text_bg(ctx, ctx->current_bg);
                 } else {
                     ctx->set_text_fg(ctx, ctx->current_bg);
+                }
+            } else {
+                if (!ctx->reverse_video) {
+                    ctx->set_text_bg_default(ctx);
+                } else {
+                    ctx->set_text_fg_default(ctx);
                 }
             }
             continue;
