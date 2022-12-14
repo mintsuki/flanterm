@@ -569,8 +569,12 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
             break;
         case 'H':
         case 'f':
-            ctx->esc_values[0] -= 1;
-            ctx->esc_values[1] -= 1;
+            if (ctx->esc_values[0] != 0) {
+                ctx->esc_values[0]--;
+            }
+            if (ctx->esc_values[1] != 0) {
+                ctx->esc_values[1]--;
+            }
             if (ctx->esc_values[1] >= ctx->cols)
                 ctx->esc_values[1] = ctx->cols - 1;
             if (ctx->esc_values[0] >= ctx->rows)
@@ -699,6 +703,12 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
             }
             break;
         case 'r':
+            if (ctx->esc_values[0] == 0) {
+                ctx->esc_values[0] = 1;
+            }
+            if (ctx->esc_values[1] == 0) {
+                ctx->esc_values[1] = 1;
+            }
             ctx->scroll_top_margin = 0;
             ctx->scroll_bottom_margin = ctx->rows;
             if (ctx->esc_values_i > 0) {

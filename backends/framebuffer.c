@@ -724,10 +724,13 @@ static void fbterm_raw_putchar(struct term_context *_ctx, uint8_t c) {
     if (ctx->cursor_x >= _ctx->cols && (ctx->cursor_y < _ctx->scroll_bottom_margin - 1 || _ctx->scroll_enabled)) {
         ctx->cursor_x = 0;
         ctx->cursor_y++;
-    }
-    if (ctx->cursor_y >= _ctx->scroll_bottom_margin) {
-        ctx->cursor_y = _ctx->scroll_bottom_margin - 1;
-        fbterm_scroll(_ctx);
+        if (ctx->cursor_y == _ctx->scroll_bottom_margin) {
+            ctx->cursor_y--;
+            fbterm_scroll(_ctx);
+        }
+        if (ctx->cursor_y >= _ctx->cols) {
+            ctx->cursor_y = _ctx->cols - 1;
+        }
     }
 
     struct fbterm_char ch;
