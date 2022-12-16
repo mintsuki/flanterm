@@ -969,6 +969,7 @@ struct term_context *fbterm_init(
     _ctx->deinit = fbterm_deinit;
 
     term_context_reinit(_ctx);
+    fbterm_full_refresh(_ctx);
 
     return _ctx;
 }
