@@ -251,7 +251,11 @@ set_bg_bright:
                 ctx->swap_palette(ctx);
             }
 
-            ctx->set_text_fg_default(ctx);
+            if (!ctx->bold) {
+                ctx->set_text_fg_default(ctx);
+            } else {
+                ctx->set_text_fg_default_bright(ctx);
+            }
 
             if (ctx->reverse_video) {
                 ctx->swap_palette(ctx);
@@ -267,7 +271,11 @@ set_bg_bright:
                 ctx->swap_palette(ctx);
             }
 
-            ctx->set_text_bg_default(ctx);
+            if (!ctx->bg_bold) {
+                ctx->set_text_bg_default(ctx);
+            } else {
+                ctx->set_text_bg_default_bright(ctx);
+            }
 
             if (ctx->reverse_video) {
                 ctx->swap_palette(ctx);
