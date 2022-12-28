@@ -534,20 +534,6 @@ static void fbterm_clear(struct term_context *_ctx, bool move) {
     }
 }
 
-static void fbterm_enable_cursor(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
-
-    ctx->cursor_status = true;
-}
-
-static bool fbterm_disable_cursor(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
-
-    bool ret = ctx->cursor_status;
-    ctx->cursor_status = false;
-    return ret;
-}
-
 static void fbterm_set_cursor_pos(struct term_context *_ctx, size_t x, size_t y) {
     struct fbterm_context *ctx = (void *)_ctx;
 
@@ -686,7 +672,7 @@ static void draw_cursor(struct term_context *_ctx) {
 static void fbterm_double_buffer_flush(struct term_context *_ctx) {
     struct fbterm_context *ctx = (void *)_ctx;
 
-    if (ctx->cursor_status) {
+    if (_ctx->cursor_enabled) {
         draw_cursor(_ctx);
     }
 
@@ -706,7 +692,7 @@ static void fbterm_double_buffer_flush(struct term_context *_ctx) {
         ctx->map[offset] = NULL;
     }
 
-    if ((ctx->old_cursor_x != ctx->cursor_x || ctx->old_cursor_y != ctx->cursor_y) || ctx->cursor_status == false) {
+    if ((ctx->old_cursor_x != ctx->cursor_x || ctx->old_cursor_y != ctx->cursor_y) || _ctx->cursor_enabled == false) {
         if (ctx->old_cursor_x < _ctx->cols && ctx->old_cursor_y < _ctx->rows) {
             plot_char(_ctx, &ctx->grid[ctx->old_cursor_x + ctx->old_cursor_y * _ctx->cols], ctx->old_cursor_x, ctx->old_cursor_y);
         }
@@ -756,7 +742,7 @@ static void fbterm_full_refresh(struct term_context *_ctx) {
         plot_char(_ctx, &ctx->grid[i], x, y);
     }
 
-    if (ctx->cursor_status) {
+    if (_ctx->cursor_enabled) {
         draw_cursor(_ctx);
     }
 }
@@ -789,8 +775,6 @@ struct term_context *fbterm_init(
     struct term_context *_ctx = (void *)ctx;
 
     memset(ctx, 0, sizeof(struct fbterm_context));
-
-    ctx->cursor_status = true;
 
     if (ansi_colours != NULL) {
         memcpy(ctx->ansi_colours, ansi_colours, sizeof(ctx->ansi_colours));
@@ -944,8 +928,6 @@ struct term_context *fbterm_init(
 
     _ctx->raw_putchar = fbterm_raw_putchar;
     _ctx->clear = fbterm_clear;
-    _ctx->enable_cursor = fbterm_enable_cursor;
-    _ctx->disable_cursor = fbterm_disable_cursor;
     _ctx->set_cursor_pos = fbterm_set_cursor_pos;
     _ctx->get_cursor_pos = fbterm_get_cursor_pos;
     _ctx->set_text_fg = fbterm_set_text_fg;

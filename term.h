@@ -25,6 +25,7 @@ struct term_context {
 
     size_t tab_size;
     bool autoflush;
+    bool cursor_enabled;
     bool scroll_enabled;
     bool control_sequence;
     bool csi;
@@ -66,8 +67,6 @@ struct term_context {
 
     void (*raw_putchar)(struct term_context *, uint8_t c);
     void (*clear)(struct term_context *, bool move);
-    void (*enable_cursor)(struct term_context *);
-    bool (*disable_cursor)(struct term_context *);
     void (*set_cursor_pos)(struct term_context *, size_t x, size_t y);
     void (*get_cursor_pos)(struct term_context *, size_t *x, size_t *y);
     void (*set_text_fg)(struct term_context *, size_t fg);

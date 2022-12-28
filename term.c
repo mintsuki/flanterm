@@ -46,6 +46,7 @@ static const uint32_t col256[] = {
 void term_context_reinit(struct term_context *ctx) {
     ctx->tab_size = 8;
     ctx->autoflush = true;
+    ctx->cursor_enabled = true;
     ctx->scroll_enabled = true;
     ctx->control_sequence = false;
     ctx->csi = false;
@@ -376,9 +377,9 @@ static void dec_private_parse(struct term_context *ctx, uint8_t c) {
     switch (ctx->esc_values[0]) {
         case 25: {
             if (set) {
-                ctx->enable_cursor(ctx);
+                ctx->cursor_enabled = true;
             } else {
-                ctx->disable_cursor(ctx);
+                ctx->cursor_enabled = false;
             }
             return;
         }
