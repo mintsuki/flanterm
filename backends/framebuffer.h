@@ -69,7 +69,6 @@ struct fbterm_context {
 
     uint32_t text_fg;
     uint32_t text_bg;
-    bool cursor_status;
     size_t cursor_x;
     size_t cursor_y;
 
