@@ -1204,8 +1204,11 @@ static void term_putchar(struct term_context *ctx, uint8_t c) {
 
         if (cc == -1) {
             size_t replacement_width = mk_wcwidth(ctx->code_point);
-            for (size_t i = 0; i < replacement_width; i++) {
-                ctx->raw_putchar(ctx, 8);
+            if (replacement_width > 0) {
+                ctx->raw_putchar(ctx, 0xfe);
+            }
+            for (size_t i = 1; i < replacement_width; i++) {
+                ctx->raw_putchar(ctx, ' ');
             }
         } else {
             ctx->raw_putchar(ctx, cc);
