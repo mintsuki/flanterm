@@ -73,6 +73,7 @@ void term_context_reinit(struct term_context *ctx) {
     ctx->current_bg = (size_t)-1;
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
+    ctx->oob_output = TERM_OOB_OUTPUT_ONLCR;
 }
 
 static void term_putchar(struct term_context *ctx, uint8_t c);
@@ -1274,9 +1275,9 @@ unicode_error:
         case '\n':
             if (y == ctx->scroll_bottom_margin - 1) {
                 ctx->scroll(ctx);
-                ctx->set_cursor_pos(ctx, 0, y);
+                ctx->set_cursor_pos(ctx, (ctx->oob_output & TERM_OOB_OUTPUT_ONLCR) ? 0 : x, y);
             } else {
-                ctx->set_cursor_pos(ctx, 0, y + 1);
+                ctx->set_cursor_pos(ctx, (ctx->oob_output & TERM_OOB_OUTPUT_ONLCR) ? 0 : x, y + 1);
             }
             return;
         case '\b':

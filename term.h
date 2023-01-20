@@ -20,6 +20,15 @@ extern "C" {
 #define TERM_CB_MODE 70
 #define TERM_CB_LINUX 80
 
+#define TERM_OOB_OUTPUT_OCRNL (1 << 0)
+#define TERM_OOB_OUTPUT_OFDEL (1 << 1)
+#define TERM_OOB_OUTPUT_OFILL (1 << 2)
+#define TERM_OOB_OUTPUT_OLCUC (1 << 3)
+#define TERM_OOB_OUTPUT_ONLCR (1 << 4)
+#define TERM_OOB_OUTPUT_ONLRET (1 << 5)
+#define TERM_OOB_OUTPUT_ONOCR (1 << 6)
+#define TERM_OOB_OUTPUT_OPOST (1 << 7)
+
 struct term_context {
     /* internal use */
 
@@ -53,6 +62,7 @@ struct term_context {
     size_t scroll_top_margin;
     size_t scroll_bottom_margin;
     uint32_t esc_values[TERM_MAX_ESC_VALUES];
+    uint64_t oob_output;
     bool saved_state_bold;
     bool saved_state_bg_bold;
     bool saved_state_reverse_video;
