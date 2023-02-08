@@ -1320,5 +1320,7 @@ unicode_error:
             break;
     }
 
-    ctx->raw_putchar(ctx, c);
+    if (ctx->in_bootloader || (c >= 0x20 && c <= 0x7e)) {
+        ctx->raw_putchar(ctx, c);
+    }
 }
