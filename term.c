@@ -861,39 +861,41 @@ is_csi:
     ctx->escape = false;
 }
 
-static uint8_t dec_special_to_cp437(uint8_t c) {
+static bool dec_special_print(struct term_context *ctx, uint8_t c) {
+#define TERM_DEC_SPCL_PRN(C) ctx->raw_putchar(ctx, (C)); return true;
     switch (c) {
-        case '`': return 0x04;
-        case '0': return 0xdb;
-        case '-': return 0x18;
-        case ',': return 0x1b;
-        case '.': return 0x19;
-        case 'a': return 0xb1;
-        case 'f': return 0xf8;
-        case 'g': return 0xf1;
-        case 'h': return 0xb0;
-        case 'j': return 0xd9;
-        case 'k': return 0xbf;
-        case 'l': return 0xda;
-        case 'm': return 0xc0;
-        case 'n': return 0xc5;
-        case 'q': return 0xc4;
-        case 's': return 0x5f;
-        case 't': return 0xc3;
-        case 'u': return 0xb4;
-        case 'v': return 0xc1;
-        case 'w': return 0xc2;
-        case 'x': return 0xb3;
-        case 'y': return 0xf3;
-        case 'z': return 0xf2;
-        case '~': return 0xfa;
-        case '_': return 0xff;
-        case '+': return 0x1a;
-        case '{': return 0xe3;
-        case '}': return 0x9c;
+        case '`': TERM_DEC_SPCL_PRN(0x04)
+        case '0': TERM_DEC_SPCL_PRN(0xdb)
+        case '-': TERM_DEC_SPCL_PRN(0x18)
+        case ',': TERM_DEC_SPCL_PRN(0x1b)
+        case '.': TERM_DEC_SPCL_PRN(0x19)
+        case 'a': TERM_DEC_SPCL_PRN(0xb1)
+        case 'f': TERM_DEC_SPCL_PRN(0xf8)
+        case 'g': TERM_DEC_SPCL_PRN(0xf1)
+        case 'h': TERM_DEC_SPCL_PRN(0xb0)
+        case 'j': TERM_DEC_SPCL_PRN(0xd9)
+        case 'k': TERM_DEC_SPCL_PRN(0xbf)
+        case 'l': TERM_DEC_SPCL_PRN(0xda)
+        case 'm': TERM_DEC_SPCL_PRN(0xc0)
+        case 'n': TERM_DEC_SPCL_PRN(0xc5)
+        case 'q': TERM_DEC_SPCL_PRN(0xc4)
+        case 's': TERM_DEC_SPCL_PRN(0x5f)
+        case 't': TERM_DEC_SPCL_PRN(0xc3)
+        case 'u': TERM_DEC_SPCL_PRN(0xb4)
+        case 'v': TERM_DEC_SPCL_PRN(0xc1)
+        case 'w': TERM_DEC_SPCL_PRN(0xc2)
+        case 'x': TERM_DEC_SPCL_PRN(0xb3)
+        case 'y': TERM_DEC_SPCL_PRN(0xf3)
+        case 'z': TERM_DEC_SPCL_PRN(0xf2)
+        case '~': TERM_DEC_SPCL_PRN(0xfa)
+        case '_': TERM_DEC_SPCL_PRN(0xff)
+        case '+': TERM_DEC_SPCL_PRN(0x1a)
+        case '{': TERM_DEC_SPCL_PRN(0xe3)
+        case '}': TERM_DEC_SPCL_PRN(0x9c)
     }
+#undef TERM_DEC_SPCL_PRN
 
-    return c;
+    return false;
 }
 
 // Following wcwidth related code inherited from:
@@ -1316,7 +1318,9 @@ unicode_error:
         case CHARSET_DEFAULT:
             break;
         case CHARSET_DEC_SPECIAL:
-            c = dec_special_to_cp437(c);
+            if (dec_special_print(ctx, c)) {
+                return;
+            }
             break;
     }
 
