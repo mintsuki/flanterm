@@ -876,11 +876,6 @@ is_csi:
         case ')':
             ctx->g_select = c - '\'';
             break;
-        case 0x1b:
-            if (ctx->in_bootloader == true) {
-                ctx->raw_putchar(ctx, c);
-            }
-            break;
     }
 
     ctx->escape = false;
@@ -1204,7 +1199,7 @@ static int unicode_to_cp437(uint64_t code_point) {
 }
 
 static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
-    if (ctx->discard_next || (ctx->in_bootloader == false && (c == 0x18 || c == 0x1a))) {
+    if (ctx->discard_next || (c == 0x18 || c == 0x1a)) {
         ctx->discard_next = false;
         ctx->escape = false;
         ctx->csi = false;
@@ -1245,7 +1240,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     }
 
 unicode_error:
-    if (c >= 0xc0 && c <= 0xf7 && ctx->in_bootloader == false) {
+    if (c >= 0xc0 && c <= 0xf7) {
         if (c >= 0xc0 && c <= 0xdf) {
             ctx->unicode_remaining = 1;
             ctx->code_point = (c & 0x1f) << 6;
@@ -1349,7 +1344,7 @@ unicode_error:
             break;
     }
 
-    if (ctx->in_bootloader || (c >= 0x20 && c <= 0x7e)) {
+    if (c >= 0x20 && c <= 0x7e) {
         ctx->raw_putchar(ctx, c);
     }
 }

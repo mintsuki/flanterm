@@ -98,7 +98,6 @@ struct flanterm_context {
     /* to be set by backend */
 
     size_t rows, cols;
-    bool in_bootloader;
 
     void (*raw_putchar)(struct flanterm_context *, uint8_t c);
     void (*clear)(struct flanterm_context *, bool move);
