@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "../term.h"
-#include "framebuffer.h"
+#include "../flanterm.h"
+#include "fb.h"
 
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
@@ -354,31 +354,31 @@ static const uint8_t builtin_font[] = {
   0x00, 0x00, 0x00, 0x00
 };
 
-static void fbterm_save_state(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_save_state(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
     ctx->saved_state_text_fg = ctx->text_fg;
     ctx->saved_state_text_bg = ctx->text_bg;
     ctx->saved_state_cursor_x = ctx->cursor_x;
     ctx->saved_state_cursor_y = ctx->cursor_y;
 }
 
-static void fbterm_restore_state(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_restore_state(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
     ctx->text_fg = ctx->saved_state_text_fg;
     ctx->text_bg = ctx->saved_state_text_bg;
     ctx->cursor_x = ctx->saved_state_cursor_x;
     ctx->cursor_y = ctx->saved_state_cursor_y;
 }
 
-static void fbterm_swap_palette(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_swap_palette(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
     uint32_t tmp = ctx->text_bg;
     ctx->text_bg = ctx->text_fg;
     ctx->text_fg = tmp;
 }
 
-static void plot_char(struct term_context *_ctx, struct fbterm_char *c, size_t x, size_t y) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void plot_char(struct flanterm_context *_ctx, struct flanterm_fb_char *c, size_t x, size_t y) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (x >= _ctx->cols || y >= _ctx->rows) {
         return;
@@ -405,8 +405,8 @@ static void plot_char(struct term_context *_ctx, struct fbterm_char *c, size_t x
     }
 }
 
-static void plot_char_fast(struct term_context *_ctx, struct fbterm_char *old, struct fbterm_char *c, size_t x, size_t y) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void plot_char_fast(struct flanterm_context *_ctx, struct flanterm_fb_char *old, struct flanterm_fb_char *c, size_t x, size_t y) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (x >= _ctx->cols || y >= _ctx->rows) {
         return;
@@ -436,12 +436,12 @@ static void plot_char_fast(struct term_context *_ctx, struct fbterm_char *old, s
     }
 }
 
-static inline bool compare_char(struct fbterm_char *a, struct fbterm_char *b) {
+static inline bool compare_char(struct flanterm_fb_char *a, struct flanterm_fb_char *b) {
     return !(a->c != b->c || a->bg != b->bg || a->fg != b->fg);
 }
 
-static void push_to_queue(struct term_context *_ctx, struct fbterm_char *c, size_t x, size_t y) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void push_to_queue(struct flanterm_context *_ctx, struct flanterm_fb_char *c, size_t x, size_t y) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (x >= _ctx->cols || y >= _ctx->rows) {
         return;
@@ -449,7 +449,7 @@ static void push_to_queue(struct term_context *_ctx, struct fbterm_char *c, size
 
     size_t i = y * _ctx->cols + x;
 
-    struct fbterm_queue_item *q = ctx->map[i];
+    struct flanterm_fb_queue_item *q = ctx->map[i];
 
     if (q == NULL) {
         if (compare_char(&ctx->grid[i], c)) {
@@ -464,16 +464,16 @@ static void push_to_queue(struct term_context *_ctx, struct fbterm_char *c, size
     q->c = *c;
 }
 
-static void fbterm_revscroll(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_revscroll(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     for (size_t i = (_ctx->scroll_bottom_margin - 1) * _ctx->cols - 1;
          i >= _ctx->scroll_top_margin * _ctx->cols; i--) {
         if (i == (size_t)-1) {
             break;
         }
-        struct fbterm_char *c;
-        struct fbterm_queue_item *q = ctx->map[i];
+        struct flanterm_fb_char *c;
+        struct flanterm_fb_queue_item *q = ctx->map[i];
         if (q != NULL) {
             c = &q->c;
         } else {
@@ -483,7 +483,7 @@ static void fbterm_revscroll(struct term_context *_ctx) {
     }
 
     // Clear the first line of the screen.
-    struct fbterm_char empty;
+    struct flanterm_fb_char empty;
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
@@ -492,13 +492,13 @@ static void fbterm_revscroll(struct term_context *_ctx) {
     }
 }
 
-static void fbterm_scroll(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     for (size_t i = (_ctx->scroll_top_margin + 1) * _ctx->cols;
          i < _ctx->scroll_bottom_margin * _ctx->cols; i++) {
-        struct fbterm_char *c;
-        struct fbterm_queue_item *q = ctx->map[i];
+        struct flanterm_fb_char *c;
+        struct flanterm_fb_queue_item *q = ctx->map[i];
         if (q != NULL) {
             c = &q->c;
         } else {
@@ -508,7 +508,7 @@ static void fbterm_scroll(struct term_context *_ctx) {
     }
 
     // Clear the last line of the screen.
-    struct fbterm_char empty;
+    struct flanterm_fb_char empty;
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
@@ -517,10 +517,10 @@ static void fbterm_scroll(struct term_context *_ctx) {
     }
 }
 
-static void fbterm_clear(struct term_context *_ctx, bool move) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_clear(struct flanterm_context *_ctx, bool move) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
-    struct fbterm_char empty;
+    struct flanterm_fb_char empty;
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
@@ -534,8 +534,8 @@ static void fbterm_clear(struct term_context *_ctx, bool move) {
     }
 }
 
-static void fbterm_set_cursor_pos(struct term_context *_ctx, size_t x, size_t y) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_cursor_pos(struct flanterm_context *_ctx, size_t x, size_t y) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (x >= _ctx->cols) {
         if ((int)x < 0) {
@@ -555,15 +555,15 @@ static void fbterm_set_cursor_pos(struct term_context *_ctx, size_t x, size_t y)
     ctx->cursor_y = y;
 }
 
-static void fbterm_get_cursor_pos(struct term_context *_ctx, size_t *x, size_t *y) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_get_cursor_pos(struct flanterm_context *_ctx, size_t *x, size_t *y) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     *x = ctx->cursor_x >= _ctx->cols ? _ctx->cols - 1 : ctx->cursor_x;
     *y = ctx->cursor_y >= _ctx->rows ? _ctx->rows - 1 : ctx->cursor_y;
 }
 
-static void fbterm_move_character(struct term_context *_ctx, size_t new_x, size_t new_y, size_t old_x, size_t old_y) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_move_character(struct flanterm_context *_ctx, size_t new_x, size_t new_y, size_t old_x, size_t old_y) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (old_x >= _ctx->cols || old_y >= _ctx->rows
      || new_x >= _ctx->cols || new_y >= _ctx->rows) {
@@ -572,8 +572,8 @@ static void fbterm_move_character(struct term_context *_ctx, size_t new_x, size_
 
     size_t i = old_x + old_y * _ctx->cols;
 
-    struct fbterm_char *c;
-    struct fbterm_queue_item *q = ctx->map[i];
+    struct flanterm_fb_char *c;
+    struct flanterm_fb_queue_item *q = ctx->map[i];
     if (q != NULL) {
         c = &q->c;
     } else {
@@ -583,68 +583,68 @@ static void fbterm_move_character(struct term_context *_ctx, size_t new_x, size_
     push_to_queue(_ctx, c, new_x, new_y);
 }
 
-static void fbterm_set_text_fg(struct term_context *_ctx, size_t fg) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_fg(struct flanterm_context *_ctx, size_t fg) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->ansi_colours[fg];
 }
 
-static void fbterm_set_text_bg(struct term_context *_ctx, size_t bg) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_bg(struct flanterm_context *_ctx, size_t bg) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = ctx->ansi_colours[bg];
 }
 
-static void fbterm_set_text_fg_bright(struct term_context *_ctx, size_t fg) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_fg_bright(struct flanterm_context *_ctx, size_t fg) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->ansi_bright_colours[fg];
 }
 
-static void fbterm_set_text_bg_bright(struct term_context *_ctx, size_t bg) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_bg_bright(struct flanterm_context *_ctx, size_t bg) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = ctx->ansi_bright_colours[bg];
 }
 
-static void fbterm_set_text_fg_rgb(struct term_context *_ctx, uint32_t fg) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_fg_rgb(struct flanterm_context *_ctx, uint32_t fg) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = fg;
 }
 
-static void fbterm_set_text_bg_rgb(struct term_context *_ctx, uint32_t bg) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_bg_rgb(struct flanterm_context *_ctx, uint32_t bg) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = bg;
 }
 
-static void fbterm_set_text_fg_default(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_fg_default(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->default_fg;
 }
 
-static void fbterm_set_text_bg_default(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_bg_default(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = 0xffffffff;
 }
 
-static void fbterm_set_text_fg_default_bright(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_fg_default_bright(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->default_fg_bright;
 }
 
-static void fbterm_set_text_bg_default_bright(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_set_text_bg_default_bright(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = ctx->default_bg_bright;
 }
 
-static void draw_cursor(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void draw_cursor(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (ctx->cursor_x >= _ctx->cols || ctx->cursor_y >= _ctx->rows) {
         return;
@@ -652,8 +652,8 @@ static void draw_cursor(struct term_context *_ctx) {
 
     size_t i = ctx->cursor_x + ctx->cursor_y * _ctx->cols;
 
-    struct fbterm_char c;
-    struct fbterm_queue_item *q = ctx->map[i];
+    struct flanterm_fb_char c;
+    struct flanterm_fb_queue_item *q = ctx->map[i];
     if (q != NULL) {
         c = q->c;
     } else {
@@ -669,20 +669,20 @@ static void draw_cursor(struct term_context *_ctx) {
     }
 }
 
-static void fbterm_double_buffer_flush(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (_ctx->cursor_enabled) {
         draw_cursor(_ctx);
     }
 
     for (size_t i = 0; i < ctx->queue_i; i++) {
-        struct fbterm_queue_item *q = &ctx->queue[i];
+        struct flanterm_fb_queue_item *q = &ctx->queue[i];
         size_t offset = q->y * _ctx->cols + q->x;
         if (ctx->map[offset] == NULL) {
             continue;
         }
-        struct fbterm_char *old = &ctx->grid[offset];
+        struct flanterm_fb_char *old = &ctx->grid[offset];
         if (q->c.bg == old->bg && q->c.fg == old->fg) {
             plot_char_fast(_ctx, old, &q->c, q->x, q->y);
         } else {
@@ -704,30 +704,30 @@ static void fbterm_double_buffer_flush(struct term_context *_ctx) {
     ctx->queue_i = 0;
 }
 
-static void fbterm_raw_putchar(struct term_context *_ctx, uint8_t c) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (ctx->cursor_x >= _ctx->cols && (ctx->cursor_y < _ctx->scroll_bottom_margin - 1 || _ctx->scroll_enabled)) {
         ctx->cursor_x = 0;
         ctx->cursor_y++;
         if (ctx->cursor_y == _ctx->scroll_bottom_margin) {
             ctx->cursor_y--;
-            fbterm_scroll(_ctx);
+            flanterm_fb_scroll(_ctx);
         }
         if (ctx->cursor_y >= _ctx->cols) {
             ctx->cursor_y = _ctx->cols - 1;
         }
     }
 
-    struct fbterm_char ch;
+    struct flanterm_fb_char ch;
     ch.c  = c;
     ch.fg = ctx->text_fg;
     ch.bg = ctx->text_bg;
     push_to_queue(_ctx, &ch, ctx->cursor_x++, ctx->cursor_y);
 }
 
-static void fbterm_full_refresh(struct term_context *_ctx) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     for (size_t y = 0; y < ctx->height; y++) {
         for (size_t x = 0; x < ctx->width; x++) {
@@ -747,8 +747,8 @@ static void fbterm_full_refresh(struct term_context *_ctx) {
     }
 }
 
-static void fbterm_deinit(struct term_context *_ctx, void (*_free)(void *, size_t)) {
-    struct fbterm_context *ctx = (void *)_ctx;
+static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void *, size_t)) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
 
     _free(ctx->font_bits, ctx->font_bits_size);
     _free(ctx->font_bool, ctx->font_bool_size);
@@ -756,10 +756,10 @@ static void fbterm_deinit(struct term_context *_ctx, void (*_free)(void *, size_
     _free(ctx->queue, ctx->queue_size);
     _free(ctx->map, ctx->map_size);
     _free(ctx->canvas, ctx->canvas_size);
-    _free(ctx, sizeof(struct fbterm_context));
+    _free(ctx, sizeof(struct flanterm_fb_context));
 }
 
-struct term_context *fbterm_init(
+struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
     uint32_t *canvas,
@@ -770,11 +770,11 @@ struct term_context *fbterm_init(
     size_t font_scale_x, size_t font_scale_y,
     size_t margin
 ) {
-    struct fbterm_context *ctx = _malloc(sizeof(struct fbterm_context));
+    struct flanterm_fb_context *ctx = _malloc(sizeof(struct flanterm_fb_context));
 
-    struct term_context *_ctx = (void *)ctx;
+    struct flanterm_context *_ctx = (void *)ctx;
 
-    memset(ctx, 0, sizeof(struct fbterm_context));
+    memset(ctx, 0, sizeof(struct flanterm_fb_context));
 
     if (ansi_colours != NULL) {
         memcpy(ctx->ansi_colours, ansi_colours, sizeof(ctx->ansi_colours));
@@ -834,7 +834,7 @@ struct term_context *fbterm_init(
     ctx->height = height;
     ctx->pitch = pitch;
 
-#define FONT_BYTES ((font_width * font_height * FBTERM_FONT_GLYPHS) / 8)
+#define FONT_BYTES ((font_width * font_height * FLANTERM_FB_FONT_GLYPHS) / 8)
 
     if (font != NULL) {
         ctx->font_width = font_width;
@@ -855,10 +855,10 @@ struct term_context *fbterm_init(
 
     ctx->font_width += font_spacing;
 
-    ctx->font_bool_size = FBTERM_FONT_GLYPHS * font_height * ctx->font_width * sizeof(bool);
+    ctx->font_bool_size = FLANTERM_FB_FONT_GLYPHS * font_height * ctx->font_width * sizeof(bool);
     ctx->font_bool = _malloc(ctx->font_bool_size);
 
-    for (size_t i = 0; i < FBTERM_FONT_GLYPHS; i++) {
+    for (size_t i = 0; i < FLANTERM_FB_FONT_GLYPHS; i++) {
         uint8_t *glyph = &ctx->font_bits[i * font_height];
 
         for (size_t y = 0; y < font_height; y++) {
@@ -899,7 +899,7 @@ struct term_context *fbterm_init(
     ctx->offset_x = margin + ((ctx->width - margin * 2) % ctx->glyph_width) / 2;
     ctx->offset_y = margin + ((ctx->height - margin * 2) % ctx->glyph_height) / 2;
 
-    ctx->grid_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_char);
+    ctx->grid_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_char);
     ctx->grid = _malloc(ctx->grid_size);
     for (size_t i = 0; i < _ctx->rows * _ctx->cols; i++) {
         ctx->grid[i].c = ' ';
@@ -907,12 +907,12 @@ struct term_context *fbterm_init(
         ctx->grid[i].bg = ctx->text_bg;
     }
 
-    ctx->queue_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_queue_item);
+    ctx->queue_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_queue_item);
     ctx->queue = _malloc(ctx->queue_size);
     ctx->queue_i = 0;
     memset(ctx->queue, 0, ctx->queue_size);
 
-    ctx->map_size = _ctx->rows * _ctx->cols * sizeof(struct fbterm_queue_item *);
+    ctx->map_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_queue_item *);
     ctx->map = _malloc(ctx->map_size);
     memset(ctx->map, 0, ctx->map_size);
 
@@ -926,32 +926,32 @@ struct term_context *fbterm_init(
         }
     }
 
-    _ctx->raw_putchar = fbterm_raw_putchar;
-    _ctx->clear = fbterm_clear;
-    _ctx->set_cursor_pos = fbterm_set_cursor_pos;
-    _ctx->get_cursor_pos = fbterm_get_cursor_pos;
-    _ctx->set_text_fg = fbterm_set_text_fg;
-    _ctx->set_text_bg = fbterm_set_text_bg;
-    _ctx->set_text_fg_bright = fbterm_set_text_fg_bright;
-    _ctx->set_text_bg_bright = fbterm_set_text_bg_bright;
-    _ctx->set_text_fg_rgb = fbterm_set_text_fg_rgb;
-    _ctx->set_text_bg_rgb = fbterm_set_text_bg_rgb;
-    _ctx->set_text_fg_default = fbterm_set_text_fg_default;
-    _ctx->set_text_bg_default = fbterm_set_text_bg_default;
-    _ctx->set_text_fg_default_bright = fbterm_set_text_fg_default_bright;
-    _ctx->set_text_bg_default_bright = fbterm_set_text_bg_default_bright;
-    _ctx->move_character = fbterm_move_character;
-    _ctx->scroll = fbterm_scroll;
-    _ctx->revscroll = fbterm_revscroll;
-    _ctx->swap_palette = fbterm_swap_palette;
-    _ctx->save_state = fbterm_save_state;
-    _ctx->restore_state = fbterm_restore_state;
-    _ctx->double_buffer_flush = fbterm_double_buffer_flush;
-    _ctx->full_refresh = fbterm_full_refresh;
-    _ctx->deinit = fbterm_deinit;
+    _ctx->raw_putchar = flanterm_fb_raw_putchar;
+    _ctx->clear = flanterm_fb_clear;
+    _ctx->set_cursor_pos = flanterm_fb_set_cursor_pos;
+    _ctx->get_cursor_pos = flanterm_fb_get_cursor_pos;
+    _ctx->set_text_fg = flanterm_fb_set_text_fg;
+    _ctx->set_text_bg = flanterm_fb_set_text_bg;
+    _ctx->set_text_fg_bright = flanterm_fb_set_text_fg_bright;
+    _ctx->set_text_bg_bright = flanterm_fb_set_text_bg_bright;
+    _ctx->set_text_fg_rgb = flanterm_fb_set_text_fg_rgb;
+    _ctx->set_text_bg_rgb = flanterm_fb_set_text_bg_rgb;
+    _ctx->set_text_fg_default = flanterm_fb_set_text_fg_default;
+    _ctx->set_text_bg_default = flanterm_fb_set_text_bg_default;
+    _ctx->set_text_fg_default_bright = flanterm_fb_set_text_fg_default_bright;
+    _ctx->set_text_bg_default_bright = flanterm_fb_set_text_bg_default_bright;
+    _ctx->move_character = flanterm_fb_move_character;
+    _ctx->scroll = flanterm_fb_scroll;
+    _ctx->revscroll = flanterm_fb_revscroll;
+    _ctx->swap_palette = flanterm_fb_swap_palette;
+    _ctx->save_state = flanterm_fb_save_state;
+    _ctx->restore_state = flanterm_fb_restore_state;
+    _ctx->double_buffer_flush = flanterm_fb_double_buffer_flush;
+    _ctx->full_refresh = flanterm_fb_full_refresh;
+    _ctx->deinit = flanterm_fb_deinit;
 
-    term_context_reinit(_ctx);
-    fbterm_full_refresh(_ctx);
+    flanterm_context_reinit(_ctx);
+    flanterm_fb_full_refresh(_ctx);
 
     return _ctx;
 }

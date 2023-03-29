@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "term.h"
+#include "flanterm.h"
 
 static const uint32_t col256[] = {
     0x000000, 0x00005f, 0x000087, 0x0000af, 0x0000d7, 0x0000ff, 0x005f00, 0x005f5f,
@@ -43,7 +43,7 @@ static const uint32_t col256[] = {
 #define CHARSET_DEFAULT 0
 #define CHARSET_DEC_SPECIAL 1
 
-void term_context_reinit(struct term_context *ctx) {
+void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->tab_size = 8;
     ctx->autoflush = true;
     ctx->cursor_enabled = true;
@@ -73,14 +73,14 @@ void term_context_reinit(struct term_context *ctx) {
     ctx->current_bg = (size_t)-1;
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
-    ctx->oob_output = TERM_OOB_OUTPUT_ONLCR;
+    ctx->oob_output = FLANTERM_OOB_OUTPUT_ONLCR;
 }
 
-static void term_putchar(struct term_context *ctx, uint8_t c);
+static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c);
 
-void term_write(struct term_context *ctx, const char *buf, size_t count) {
+void flanterm_write(struct flanterm_context *ctx, const char *buf, size_t count) {
     for (size_t i = 0; i < count; i++) {
-        term_putchar(ctx, buf[i]);
+        flanterm_putchar(ctx, buf[i]);
     }
 
     if (ctx->autoflush) {
@@ -88,7 +88,7 @@ void term_write(struct term_context *ctx, const char *buf, size_t count) {
     }
 }
 
-static void sgr(struct term_context *ctx) {
+static void sgr(struct flanterm_context *ctx) {
     size_t i = 0;
 
     if (!ctx->esc_values_i)
@@ -357,7 +357,7 @@ set_bg_bright:
 out:;
 }
 
-static void dec_private_parse(struct term_context *ctx, uint8_t c) {
+static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
     ctx->dec_private = false;
 
     if (ctx->esc_values_i == 0) {
@@ -387,21 +387,21 @@ static void dec_private_parse(struct term_context *ctx, uint8_t c) {
     }
 
     if (ctx->callback != NULL) {
-        ctx->callback(ctx, TERM_CB_DEC, ctx->esc_values_i, (uintptr_t)ctx->esc_values, c);
+        ctx->callback(ctx, FLANTERM_CB_DEC, ctx->esc_values_i, (uintptr_t)ctx->esc_values, c);
     }
 }
 
-static void linux_private_parse(struct term_context *ctx) {
+static void linux_private_parse(struct flanterm_context *ctx) {
     if (ctx->esc_values_i == 0) {
         return;
     }
 
     if (ctx->callback != NULL) {
-        ctx->callback(ctx, TERM_CB_LINUX, ctx->esc_values_i, (uintptr_t)ctx->esc_values, 0);
+        ctx->callback(ctx, FLANTERM_CB_LINUX, ctx->esc_values_i, (uintptr_t)ctx->esc_values, 0);
     }
 }
 
-static void mode_toggle(struct term_context *ctx, uint8_t c) {
+static void mode_toggle(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->esc_values_i == 0) {
         return;
     }
@@ -423,11 +423,11 @@ static void mode_toggle(struct term_context *ctx, uint8_t c) {
     }
 
     if (ctx->callback != NULL) {
-        ctx->callback(ctx, TERM_CB_MODE, ctx->esc_values_i, (uintptr_t)ctx->esc_values, c);
+        ctx->callback(ctx, FLANTERM_CB_MODE, ctx->esc_values_i, (uintptr_t)ctx->esc_values, c);
     }
 }
 
-static void osc_parse(struct term_context *ctx, uint8_t c) {
+static void osc_parse(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->osc_escape && c == '\\') {
         goto cleanup;
     }
@@ -450,7 +450,7 @@ cleanup:
     ctx->escape = false;
 }
 
-static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
+static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->escape_offset == 2) {
         switch (c) {
             case '[':
@@ -463,7 +463,7 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
     }
 
     if (c >= '0' && c <= '9') {
-        if (ctx->esc_values_i == TERM_MAX_ESC_VALUES) {
+        if (ctx->esc_values_i == FLANTERM_MAX_ESC_VALUES) {
             return;
         }
         ctx->rrr = true;
@@ -478,7 +478,7 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
         if (c == ';')
             return;
     } else if (c == ';') {
-        if (ctx->esc_values_i == TERM_MAX_ESC_VALUES) {
+        if (ctx->esc_values_i == FLANTERM_MAX_ESC_VALUES) {
             return;
         }
         ctx->esc_values[ctx->esc_values_i] = 0;
@@ -494,7 +494,7 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
             esc_default = 1; break;
     }
 
-    for (size_t i = ctx->esc_values_i; i < TERM_MAX_ESC_VALUES; i++) {
+    for (size_t i = ctx->esc_values_i; i < FLANTERM_MAX_ESC_VALUES; i++) {
         ctx->esc_values[i] = esc_default;
     }
 
@@ -561,7 +561,7 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
             break;
         case 'c':
             if (ctx->callback != NULL) {
-                ctx->callback(ctx, TERM_CB_PRIVATE_ID, 0, 0, 0);
+                ctx->callback(ctx, FLANTERM_CB_PRIVATE_ID, 0, 0, 0);
             }
             break;
         case 'd':
@@ -609,19 +609,19 @@ static void control_sequence_parse(struct term_context *ctx, uint8_t c) {
             switch (ctx->esc_values[0]) {
                 case 5:
                     if (ctx->callback != NULL) {
-                        ctx->callback(ctx, TERM_CB_STATUS_REPORT, 0, 0, 0);
+                        ctx->callback(ctx, FLANTERM_CB_STATUS_REPORT, 0, 0, 0);
                     }
                     break;
                 case 6:
                     if (ctx->callback != NULL) {
-                        ctx->callback(ctx, TERM_CB_POS_REPORT, x + 1, y + 1, 0);
+                        ctx->callback(ctx, FLANTERM_CB_POS_REPORT, x + 1, y + 1, 0);
                     }
                     break;
             }
             break;
         case 'q':
             if (ctx->callback != NULL) {
-                ctx->callback(ctx, TERM_CB_KBD_LEDS, ctx->esc_values[0], 0, 0);
+                ctx->callback(ctx, FLANTERM_CB_KBD_LEDS, ctx->esc_values[0], 0, 0);
             }
             break;
         case 'J':
@@ -751,7 +751,7 @@ cleanup:
     ctx->escape = false;
 }
 
-static void restore_state(struct term_context *ctx) {
+static void restore_state(struct flanterm_context *ctx) {
     ctx->bold = ctx->saved_state_bold;
     ctx->bg_bold = ctx->saved_state_bg_bold;
     ctx->reverse_video = ctx->saved_state_reverse_video;
@@ -762,7 +762,7 @@ static void restore_state(struct term_context *ctx) {
     ctx->restore_state(ctx);
 }
 
-static void save_state(struct term_context *ctx) {
+static void save_state(struct flanterm_context *ctx) {
     ctx->save_state(ctx);
 
     ctx->saved_state_bold = ctx->bold;
@@ -773,7 +773,7 @@ static void save_state(struct term_context *ctx) {
     ctx->saved_state_current_bg = ctx->current_bg;
 }
 
-static void escape_parse(struct term_context *ctx, uint8_t c) {
+static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
     ctx->escape_offset++;
 
     if (ctx->osc == true) {
@@ -801,7 +801,7 @@ static void escape_parse(struct term_context *ctx, uint8_t c) {
             return;
         case '[':
 is_csi:
-            for (size_t i = 0; i < TERM_MAX_ESC_VALUES; i++)
+            for (size_t i = 0; i < FLANTERM_MAX_ESC_VALUES; i++)
                 ctx->esc_values[i] = 0;
             ctx->esc_values_i = 0;
             ctx->rrr = false;
@@ -814,7 +814,7 @@ is_csi:
             restore_state(ctx);
             break;
         case 'c':
-            term_context_reinit(ctx);
+            flanterm_context_reinit(ctx);
             ctx->clear(ctx, true);
             break;
         case 'D':
@@ -844,7 +844,7 @@ is_csi:
             break;
         case 'Z':
             if (ctx->callback != NULL) {
-                ctx->callback(ctx, TERM_CB_PRIVATE_ID, 0, 0, 0);
+                ctx->callback(ctx, FLANTERM_CB_PRIVATE_ID, 0, 0, 0);
             }
             break;
         case '(':
@@ -861,39 +861,39 @@ is_csi:
     ctx->escape = false;
 }
 
-static bool dec_special_print(struct term_context *ctx, uint8_t c) {
-#define TERM_DEC_SPCL_PRN(C) ctx->raw_putchar(ctx, (C)); return true;
+static bool dec_special_print(struct flanterm_context *ctx, uint8_t c) {
+#define FLANTERM_DEC_SPCL_PRN(C) ctx->raw_putchar(ctx, (C)); return true;
     switch (c) {
-        case '`': TERM_DEC_SPCL_PRN(0x04)
-        case '0': TERM_DEC_SPCL_PRN(0xdb)
-        case '-': TERM_DEC_SPCL_PRN(0x18)
-        case ',': TERM_DEC_SPCL_PRN(0x1b)
-        case '.': TERM_DEC_SPCL_PRN(0x19)
-        case 'a': TERM_DEC_SPCL_PRN(0xb1)
-        case 'f': TERM_DEC_SPCL_PRN(0xf8)
-        case 'g': TERM_DEC_SPCL_PRN(0xf1)
-        case 'h': TERM_DEC_SPCL_PRN(0xb0)
-        case 'j': TERM_DEC_SPCL_PRN(0xd9)
-        case 'k': TERM_DEC_SPCL_PRN(0xbf)
-        case 'l': TERM_DEC_SPCL_PRN(0xda)
-        case 'm': TERM_DEC_SPCL_PRN(0xc0)
-        case 'n': TERM_DEC_SPCL_PRN(0xc5)
-        case 'q': TERM_DEC_SPCL_PRN(0xc4)
-        case 's': TERM_DEC_SPCL_PRN(0x5f)
-        case 't': TERM_DEC_SPCL_PRN(0xc3)
-        case 'u': TERM_DEC_SPCL_PRN(0xb4)
-        case 'v': TERM_DEC_SPCL_PRN(0xc1)
-        case 'w': TERM_DEC_SPCL_PRN(0xc2)
-        case 'x': TERM_DEC_SPCL_PRN(0xb3)
-        case 'y': TERM_DEC_SPCL_PRN(0xf3)
-        case 'z': TERM_DEC_SPCL_PRN(0xf2)
-        case '~': TERM_DEC_SPCL_PRN(0xfa)
-        case '_': TERM_DEC_SPCL_PRN(0xff)
-        case '+': TERM_DEC_SPCL_PRN(0x1a)
-        case '{': TERM_DEC_SPCL_PRN(0xe3)
-        case '}': TERM_DEC_SPCL_PRN(0x9c)
+        case '`': FLANTERM_DEC_SPCL_PRN(0x04)
+        case '0': FLANTERM_DEC_SPCL_PRN(0xdb)
+        case '-': FLANTERM_DEC_SPCL_PRN(0x18)
+        case ',': FLANTERM_DEC_SPCL_PRN(0x1b)
+        case '.': FLANTERM_DEC_SPCL_PRN(0x19)
+        case 'a': FLANTERM_DEC_SPCL_PRN(0xb1)
+        case 'f': FLANTERM_DEC_SPCL_PRN(0xf8)
+        case 'g': FLANTERM_DEC_SPCL_PRN(0xf1)
+        case 'h': FLANTERM_DEC_SPCL_PRN(0xb0)
+        case 'j': FLANTERM_DEC_SPCL_PRN(0xd9)
+        case 'k': FLANTERM_DEC_SPCL_PRN(0xbf)
+        case 'l': FLANTERM_DEC_SPCL_PRN(0xda)
+        case 'm': FLANTERM_DEC_SPCL_PRN(0xc0)
+        case 'n': FLANTERM_DEC_SPCL_PRN(0xc5)
+        case 'q': FLANTERM_DEC_SPCL_PRN(0xc4)
+        case 's': FLANTERM_DEC_SPCL_PRN(0x5f)
+        case 't': FLANTERM_DEC_SPCL_PRN(0xc3)
+        case 'u': FLANTERM_DEC_SPCL_PRN(0xb4)
+        case 'v': FLANTERM_DEC_SPCL_PRN(0xc1)
+        case 'w': FLANTERM_DEC_SPCL_PRN(0xc2)
+        case 'x': FLANTERM_DEC_SPCL_PRN(0xb3)
+        case 'y': FLANTERM_DEC_SPCL_PRN(0xf3)
+        case 'z': FLANTERM_DEC_SPCL_PRN(0xf2)
+        case '~': FLANTERM_DEC_SPCL_PRN(0xfa)
+        case '_': FLANTERM_DEC_SPCL_PRN(0xff)
+        case '+': FLANTERM_DEC_SPCL_PRN(0x1a)
+        case '{': FLANTERM_DEC_SPCL_PRN(0xe3)
+        case '}': FLANTERM_DEC_SPCL_PRN(0x9c)
     }
-#undef TERM_DEC_SPCL_PRN
+#undef FLANTERM_DEC_SPCL_PRN
 
     return false;
 }
@@ -1178,7 +1178,7 @@ static int unicode_to_cp437(uint64_t code_point) {
     return -1;
 }
 
-static void term_putchar(struct term_context *ctx, uint8_t c) {
+static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->discard_next || (ctx->in_bootloader == false && (c == 0x18 || c == 0x1a))) {
         ctx->discard_next = false;
         ctx->escape = false;
@@ -1277,9 +1277,9 @@ unicode_error:
         case '\n':
             if (y == ctx->scroll_bottom_margin - 1) {
                 ctx->scroll(ctx);
-                ctx->set_cursor_pos(ctx, (ctx->oob_output & TERM_OOB_OUTPUT_ONLCR) ? 0 : x, y);
+                ctx->set_cursor_pos(ctx, (ctx->oob_output & FLANTERM_OOB_OUTPUT_ONLCR) ? 0 : x, y);
             } else {
-                ctx->set_cursor_pos(ctx, (ctx->oob_output & TERM_OOB_OUTPUT_ONLCR) ? 0 : x, y + 1);
+                ctx->set_cursor_pos(ctx, (ctx->oob_output & FLANTERM_OOB_OUTPUT_ONLCR) ? 0 : x, y + 1);
             }
             return;
         case '\b':
@@ -1291,7 +1291,7 @@ unicode_error:
         case '\a':
             // The bell is handled by the kernel
             if (ctx->callback != NULL) {
-                ctx->callback(ctx, TERM_CB_BELL, 0, 0, 0);
+                ctx->callback(ctx, FLANTERM_CB_BELL, 0, 0, 0);
             }
             return;
         case 14:

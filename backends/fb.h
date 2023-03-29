@@ -1,5 +1,5 @@
-#ifndef _TERM_FRAMEBUFFER_H
-#define _TERM_FRAMEBUFFER_H
+#ifndef _FLANTERM_FR_H
+#define _FLANTERM_FB_H 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,23 +9,23 @@ extern "C" {
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "../term.h"
+#include "../flanterm.h"
 
-#define FBTERM_FONT_GLYPHS 256
+#define FLANTERM_FB_FONT_GLYPHS 256
 
-struct fbterm_char {
+struct flanterm_fb_char {
     uint32_t c;
     uint32_t fg;
     uint32_t bg;
 };
 
-struct fbterm_queue_item {
+struct flanterm_fb_queue_item {
     size_t x, y;
-    struct fbterm_char c;
+    struct flanterm_fb_char c;
 };
 
-struct fbterm_context {
-    struct term_context term;
+struct flanterm_fb_context {
+    struct flanterm_context term;
 
     size_t font_width;
     size_t font_height;
@@ -60,12 +60,12 @@ struct fbterm_context {
     size_t queue_size;
     size_t map_size;
 
-    struct fbterm_char *grid;
+    struct flanterm_fb_char *grid;
 
-    struct fbterm_queue_item *queue;
+    struct flanterm_fb_queue_item *queue;
     size_t queue_i;
 
-    struct fbterm_queue_item **map;
+    struct flanterm_fb_queue_item **map;
 
     uint32_t text_fg;
     uint32_t text_bg;
@@ -81,7 +81,7 @@ struct fbterm_context {
     size_t old_cursor_y;
 };
 
-struct term_context *fbterm_init(
+struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
     uint32_t *canvas,
