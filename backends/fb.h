@@ -78,8 +78,10 @@ struct flanterm_fb_context {
     uint32_t default_fg, default_bg;
     uint32_t default_fg_bright, default_bg_bright;
 
+#ifndef FLANTERM_FB_DISABLE_CANVAS
     size_t canvas_size;
     uint32_t *canvas;
+#endif
 
     size_t grid_size;
     size_t queue_size;
@@ -109,7 +111,9 @@ struct flanterm_fb_context {
 struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
+#ifndef FLANTERM_FB_DISABLE_CANVAS
     uint32_t *canvas,
+#endif
     uint32_t *ansi_colours, uint32_t *ansi_bright_colours,
     uint32_t *default_bg, uint32_t *default_fg,
     uint32_t *default_bg_bright, uint32_t *default_fg_bright,
