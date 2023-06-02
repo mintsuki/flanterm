@@ -452,7 +452,7 @@ static void plot_char_fast(struct flanterm_context *_ctx, struct flanterm_fb_cha
 
     x = ctx->offset_x + x * ctx->glyph_width;
     y = ctx->offset_y + y * ctx->glyph_height;
-    
+
 #ifdef FLANTERM_FB_DISABLE_CANVAS
     uint32_t default_bg = ctx->default_bg;
 #endif
@@ -462,7 +462,9 @@ static void plot_char_fast(struct flanterm_context *_ctx, struct flanterm_fb_cha
     for (size_t gy = 0; gy < ctx->glyph_height; gy++) {
         uint8_t fy = gy / ctx->font_scale_y;
         volatile uint32_t *fb_line = ctx->framebuffer + x + (y + gy) * (ctx->pitch / 4);
+#ifndef FLANTERM_FB_DISABLE_CANVAS
         uint32_t *canvas_line = ctx->canvas + x + (y + gy) * ctx->width;
+#endif
         for (size_t fx = 0; fx < ctx->font_width; fx++) {
             bool old_draw = old_glyph[fy * ctx->font_width + fx];
             bool new_draw = new_glyph[fy * ctx->font_width + fx];
