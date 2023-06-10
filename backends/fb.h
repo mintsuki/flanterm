@@ -110,6 +110,7 @@ struct flanterm_fb_context {
 
 struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
+    void (*_free)(void *, size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
 #ifndef FLANTERM_FB_DISABLE_CANVAS
     uint32_t *canvas,

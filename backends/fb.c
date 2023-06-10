@@ -32,6 +32,27 @@
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
 
+#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+
+#ifndef FLANTERM_FB_BUMP_ALLOC_POOL_SIZE
+#define FLANTERM_FB_BUMP_ALLOC_POOL_SIZE (64*1024*1024)
+#endif
+
+static uint8_t bump_alloc_pool[FLANTERM_FB_BUMP_ALLOC_POOL_SIZE];
+static size_t bump_alloc_ptr = 0;
+
+static void *bump_alloc(size_t s) {
+    size_t next_ptr = bump_alloc_ptr + s;
+    if (next_ptr > FLANTERM_FB_BUMP_ALLOC_POOL_SIZE) {
+        return NULL;
+    }
+    void *ret = &bump_alloc_pool[bump_alloc_ptr];
+    bump_alloc_ptr = next_ptr;
+    return ret;
+}
+
+#endif
+
 // Builtin font originally taken from:
 // https://github.com/viler-int10h/vga-text-mode-fonts/raw/master/FONTS/PC-OTHER/TOSH-SAT.F16
 static const uint8_t builtin_font[] = {
@@ -807,6 +828,10 @@ static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
 static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void *, size_t)) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
+    if (_free == NULL) {
+        return;
+    }
+
     _free(ctx->font_bits, ctx->font_bits_size);
     _free(ctx->font_bool, ctx->font_bool_size);
     _free(ctx->grid, ctx->grid_size);
@@ -822,6 +847,7 @@ static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void
 
 struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
+    void (*_free)(void *, size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
 #ifndef FLANTERM_FB_DISABLE_CANVAS
     uint32_t *canvas,
@@ -833,7 +859,23 @@ struct flanterm_context *flanterm_fb_init(
     size_t font_scale_x, size_t font_scale_y,
     size_t margin
 ) {
-    struct flanterm_fb_context *ctx = _malloc(sizeof(struct flanterm_fb_context));
+#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+    size_t orig_bump_alloc_ptr = bump_alloc_ptr;
+#endif
+
+    if (_malloc == NULL) {
+#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+        _malloc = bump_alloc;
+#else
+        return NULL;
+#endif
+    }
+
+    struct flanterm_fb_context *ctx = NULL;
+    ctx = _malloc(sizeof(struct flanterm_fb_context));
+    if (ctx == NULL) {
+        goto fail;
+    }
 
     struct flanterm_context *_ctx = (void *)ctx;
 
@@ -902,17 +944,23 @@ struct flanterm_context *flanterm_fb_init(
     if (font != NULL) {
         ctx->font_width = font_width;
         ctx->font_height = font_height;
-        ctx->font_bits = _malloc(FONT_BYTES);
-        memcpy(ctx->font_bits, font, FONT_BYTES);
+        ctx->font_bits_size = FONT_BYTES;
+        ctx->font_bits = _malloc(ctx->font_bits_size);
+        if (ctx->font_bits == NULL) {
+            goto fail;
+        }
+        memcpy(ctx->font_bits, font, ctx->font_bits_size);
     } else {
         ctx->font_width = font_width = 8;
         ctx->font_height = font_height = 16;
+        ctx->font_bits_size = FONT_BYTES;
         font_spacing = 1;
-        ctx->font_bits = _malloc(FONT_BYTES);
-        memcpy(ctx->font_bits, builtin_font, FONT_BYTES);
+        ctx->font_bits = _malloc(ctx->font_bits_size);
+        if (ctx->font_bits == NULL) {
+            goto fail;
+        }
+        memcpy(ctx->font_bits, builtin_font, ctx->font_bits_size);
     }
-
-    ctx->font_bits_size = FONT_BYTES;
 
 #undef FONT_BYTES
 
@@ -920,6 +968,9 @@ struct flanterm_context *flanterm_fb_init(
 
     ctx->font_bool_size = FLANTERM_FB_FONT_GLYPHS * font_height * ctx->font_width * sizeof(bool);
     ctx->font_bool = _malloc(ctx->font_bool_size);
+    if (ctx->font_bool == NULL) {
+        goto fail;
+    }
 
     for (size_t i = 0; i < FLANTERM_FB_FONT_GLYPHS; i++) {
         uint8_t *glyph = &ctx->font_bits[i * font_height];
@@ -964,6 +1015,9 @@ struct flanterm_context *flanterm_fb_init(
 
     ctx->grid_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_char);
     ctx->grid = _malloc(ctx->grid_size);
+    if (ctx->grid == NULL) {
+        goto fail;
+    }
     for (size_t i = 0; i < _ctx->rows * _ctx->cols; i++) {
         ctx->grid[i].c = ' ';
         ctx->grid[i].fg = ctx->text_fg;
@@ -972,16 +1026,25 @@ struct flanterm_context *flanterm_fb_init(
 
     ctx->queue_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_queue_item);
     ctx->queue = _malloc(ctx->queue_size);
+    if (ctx->queue == NULL) {
+        goto fail;
+    }
     ctx->queue_i = 0;
     memset(ctx->queue, 0, ctx->queue_size);
 
     ctx->map_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_queue_item *);
     ctx->map = _malloc(ctx->map_size);
+    if (ctx->map == NULL) {
+        goto fail;
+    }
     memset(ctx->map, 0, ctx->map_size);
 
 #ifndef FLANTERM_FB_DISABLE_CANVAS
     ctx->canvas_size = ctx->width * ctx->height * sizeof(uint32_t);
     ctx->canvas = _malloc(ctx->canvas_size);
+    if (ctx->canvas == NULL) {
+        goto fail;
+    }
     if (canvas != NULL) {
         memcpy(ctx->canvas, canvas, ctx->canvas_size);
     } else {
@@ -1019,4 +1082,42 @@ struct flanterm_context *flanterm_fb_init(
     flanterm_fb_full_refresh(_ctx);
 
     return _ctx;
+
+fail:
+#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+    if (_malloc == bump_alloc) {
+        bump_alloc_ptr = orig_bump_alloc_ptr;
+        return NULL;
+    }
+#endif
+
+    if (_free == NULL) {
+        return NULL;
+    }
+
+#ifndef FLANTERM_FB_DISABLE_CANVAS
+    if (ctx->canvas != NULL) {
+        _free(ctx->canvas, ctx->canvas_size);
+    }
+#endif
+    if (ctx->map != NULL) {
+        _free(ctx->map, ctx->map_size);
+    }
+    if (ctx->queue != NULL) {
+        _free(ctx->queue, ctx->queue_size);
+    }
+    if (ctx->grid != NULL) {
+        _free(ctx->grid, ctx->grid_size);
+    }
+    if (ctx->font_bool != NULL) {
+        _free(ctx->font_bool, ctx->font_bool_size);
+    }
+    if (ctx->font_bits != NULL) {
+        _free(ctx->font_bits, ctx->font_bits_size);
+    }
+    if (ctx != NULL) {
+        _free(ctx, sizeof(struct flanterm_fb_context));
+    }
+
+    return NULL;
 }
