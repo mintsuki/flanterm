@@ -29,6 +29,9 @@
 
 #include "flanterm.h"
 
+// Tries to implement this standard for terminfo
+// https://man7.org/linux/man-pages/man4/console_codes.4.html
+
 static const uint32_t col256[] = {
     0x000000, 0x00005f, 0x000087, 0x0000af, 0x0000d7, 0x0000ff, 0x005f00, 0x005f5f,
     0x005f87, 0x005faf, 0x005fd7, 0x005fff, 0x008700, 0x00875f, 0x008787, 0x0087af,
@@ -61,9 +64,6 @@ static const uint32_t col256[] = {
     0x585858, 0x626262, 0x6c6c6c, 0x767676, 0x808080, 0x8a8a8a, 0x949494, 0x9e9e9e,
     0xa8a8a8, 0xb2b2b2, 0xbcbcbc, 0xc6c6c6, 0xd0d0d0, 0xdadada, 0xe4e4e4, 0xeeeeee
 };
-
-// Tries to implement this standard for terminfo
-// https://man7.org/linux/man-pages/man4/console_codes.4.html
 
 #define CHARSET_DEFAULT 0
 #define CHARSET_DEC_SPECIAL 1

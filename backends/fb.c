@@ -408,7 +408,7 @@ static void plot_char(struct flanterm_context *_ctx, struct flanterm_fb_char *c,
     if (x >= _ctx->cols || y >= _ctx->rows) {
         return;
     }
-    
+
 #ifdef FLANTERM_FB_DISABLE_CANVAS
     uint32_t default_bg = ctx->default_bg;
 #endif
@@ -421,11 +421,11 @@ static void plot_char(struct flanterm_context *_ctx, struct flanterm_fb_char *c,
     for (size_t gy = 0; gy < ctx->glyph_height; gy++) {
         uint8_t fy = gy / ctx->font_scale_y;
         volatile uint32_t *fb_line = ctx->framebuffer + x + (y + gy) * (ctx->pitch / 4);
-        
+
 #ifndef FLANTERM_FB_DISABLE_CANVAS
         uint32_t *canvas_line = ctx->canvas + x + (y + gy) * ctx->width;
 #endif
-        
+
         for (size_t fx = 0; fx < ctx->font_width; fx++) {
             bool draw = glyph[fy * ctx->font_width + fx];
             for (size_t i = 0; i < ctx->font_scale_x; i++) {
@@ -777,7 +777,7 @@ static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
 
 static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
-    
+
 #ifdef FLANTERM_FB_DISABLE_CANVAS
     uint32_t default_bg = ctx->default_bg;
 #endif
@@ -812,11 +812,11 @@ static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void
     _free(ctx->grid, ctx->grid_size);
     _free(ctx->queue, ctx->queue_size);
     _free(ctx->map, ctx->map_size);
-    
+
 #ifndef FLANTERM_FB_DISABLE_CANVAS
     _free(ctx->canvas, ctx->canvas_size);
 #endif
-    
+
     _free(ctx, sizeof(struct flanterm_fb_context));
 }
 
