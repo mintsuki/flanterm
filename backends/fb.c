@@ -32,7 +32,7 @@
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
 
-#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+#ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
 
 #ifndef FLANTERM_FB_BUMP_ALLOC_POOL_SIZE
 #define FLANTERM_FB_BUMP_ALLOC_POOL_SIZE (64*1024*1024)
@@ -859,12 +859,12 @@ struct flanterm_context *flanterm_fb_init(
     size_t font_scale_x, size_t font_scale_y,
     size_t margin
 ) {
-#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+#ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
     size_t orig_bump_alloc_ptr = bump_alloc_ptr;
 #endif
 
     if (_malloc == NULL) {
-#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+#ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
         _malloc = bump_alloc;
 #else
         return NULL;
@@ -1084,7 +1084,7 @@ struct flanterm_context *flanterm_fb_init(
     return _ctx;
 
 fail:
-#ifdef FLANTERM_FB_ENABLE_BUMP_ALLOC
+#ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
     if (_malloc == bump_alloc) {
         bump_alloc_ptr = orig_bump_alloc_ptr;
         return NULL;
