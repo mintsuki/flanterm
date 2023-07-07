@@ -123,6 +123,27 @@ struct flanterm_context *flanterm_fb_init(
     size_t margin
 );
 
+#ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
+static inline struct flanterm_context *flanterm_fb_simple_init(
+    uint32_t *framebuffer, size_t width, size_t height, size_t pitch
+) {
+    return flanterm_fb_init(
+        NULL,
+        NULL,
+        framebuffer, width, height, pitch,
+#ifndef FLANTERM_FB_DISABLE_CANVAS
+        NULL,
+#endif
+        NULL, NULL,
+        NULL, NULL,
+        NULL, NULL,
+        NULL, 0, 0, 1,
+        1, 1,
+        0
+    );
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif
