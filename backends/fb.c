@@ -400,6 +400,18 @@ static const uint8_t builtin_font[] = {
   0x00, 0x00, 0x00, 0x00
 };
 
+#ifdef FLANTERM_FB_SUPPORT_BPP
+static __attribute__((always_inline)) uint32_t convert_colour(struct flanterm_context *_ctx, uint32_t colour) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
+    uint32_t r = (colour >> 16) & 0xff;
+    uint32_t g = (colour >> 8) & 0xff;
+    uint32_t b =  colour & 0xff;
+    return (r << ctx->red_mask_shift) | (g << ctx->green_mask_shift) | (b << ctx->blue_mask_shift);
+}
+#else
+#define convert_colour(CTX, COLOUR) (COLOUR)
+#endif
+
 static void flanterm_fb_save_state(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
     ctx->saved_state_text_fg = ctx->text_fg;
@@ -680,13 +692,13 @@ static void flanterm_fb_set_text_bg_bright(struct flanterm_context *_ctx, size_t
 static void flanterm_fb_set_text_fg_rgb(struct flanterm_context *_ctx, uint32_t fg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
-    ctx->text_fg = fg;
+    ctx->text_fg = convert_colour(_ctx, fg);
 }
 
 static void flanterm_fb_set_text_bg_rgb(struct flanterm_context *_ctx, uint32_t bg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
-    ctx->text_bg = bg;
+    ctx->text_bg = convert_colour(_ctx, bg);
 }
 
 static void flanterm_fb_set_text_fg_default(struct flanterm_context *_ctx) {
@@ -849,6 +861,11 @@ struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
     void (*_free)(void *, size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
+#ifdef FLANTERM_FB_SUPPORT_BPP
+    uint8_t red_mask_size, uint8_t red_mask_shift,
+    uint8_t green_mask_size, uint8_t green_mask_shift,
+    uint8_t blue_mask_size, uint8_t blue_mask_shift,
+#endif
 #ifndef FLANTERM_FB_DISABLE_CANVAS
     uint32_t *canvas,
 #endif
@@ -861,6 +878,12 @@ struct flanterm_context *flanterm_fb_init(
 ) {
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
     size_t orig_bump_alloc_ptr = bump_alloc_ptr;
+#endif
+
+#ifdef FLANTERM_FB_SUPPORT_BPP
+    if (red_mask_size < 8 || red_mask_size != green_mask_size || red_mask_size != blue_mask_size) {
+        return NULL;
+    }
 #endif
 
     if (_malloc == NULL) {
@@ -878,57 +901,69 @@ struct flanterm_context *flanterm_fb_init(
     }
 
     struct flanterm_context *_ctx = (void *)ctx;
-
     memset(ctx, 0, sizeof(struct flanterm_fb_context));
 
+#ifdef FLANTERM_FB_SUPPORT_BPP
+    ctx->red_mask_size = red_mask_size;
+    ctx->red_mask_shift = red_mask_shift + (red_mask_size - 8);
+    ctx->green_mask_size = green_mask_size;
+    ctx->green_mask_shift = green_mask_shift + (green_mask_size - 8);
+    ctx->blue_mask_size = blue_mask_size;
+    ctx->blue_mask_shift = blue_mask_shift + (blue_mask_size - 8);
+#endif
+
     if (ansi_colours != NULL) {
-        memcpy(ctx->ansi_colours, ansi_colours, sizeof(ctx->ansi_colours));
+        for (size_t i = 0; i < 8; i++) {
+            ctx->ansi_colours[i] = convert_colour(_ctx, ansi_colours[i]);
+        }
     } else {
-        ctx->ansi_colours[0] = 0x00000000; // black
-        ctx->ansi_colours[1] = 0x00aa0000; // red
-        ctx->ansi_colours[2] = 0x0000aa00; // green
-        ctx->ansi_colours[3] = 0x00aa5500; // brown
-        ctx->ansi_colours[4] = 0x000000aa; // blue
-        ctx->ansi_colours[5] = 0x00aa00aa; // magenta
-        ctx->ansi_colours[6] = 0x0000aaaa; // cyan
-        ctx->ansi_colours[7] = 0x00aaaaaa; // grey
+        ctx->ansi_colours[0] = convert_colour(_ctx, 0x00000000); // black
+        ctx->ansi_colours[1] = convert_colour(_ctx, 0x00aa0000); // red
+        ctx->ansi_colours[2] = convert_colour(_ctx, 0x0000aa00); // green
+        ctx->ansi_colours[3] = convert_colour(_ctx, 0x00aa5500); // brown
+        ctx->ansi_colours[4] = convert_colour(_ctx, 0x000000aa); // blue
+        ctx->ansi_colours[5] = convert_colour(_ctx, 0x00aa00aa); // magenta
+        ctx->ansi_colours[6] = convert_colour(_ctx, 0x0000aaaa); // cyan
+        ctx->ansi_colours[7] = convert_colour(_ctx, 0x00aaaaaa); // grey
     }
 
     if (ansi_bright_colours != NULL) {
-        memcpy(ctx->ansi_bright_colours, ansi_bright_colours, sizeof(ctx->ansi_bright_colours));
+        for (size_t i = 0; i < 8; i++) {
+            ctx->ansi_bright_colours[i] = convert_colour(_ctx, ansi_bright_colours[i]);
+        }
     } else {
-        ctx->ansi_bright_colours[0] = 0x00555555; // black
-        ctx->ansi_bright_colours[1] = 0x00ff5555; // red
-        ctx->ansi_bright_colours[2] = 0x0055ff55; // green
-        ctx->ansi_bright_colours[3] = 0x00ffff55; // brown
-        ctx->ansi_bright_colours[4] = 0x005555ff; // blue
-        ctx->ansi_bright_colours[5] = 0x00ff55ff; // magenta
-        ctx->ansi_bright_colours[6] = 0x0055ffff; // cyan
-        ctx->ansi_bright_colours[7] = 0x00ffffff; // grey
+        ctx->ansi_bright_colours[0] = convert_colour(_ctx, 0x00555555); // black
+        ctx->ansi_bright_colours[1] = convert_colour(_ctx, 0x00ff5555); // red
+        ctx->ansi_bright_colours[2] = convert_colour(_ctx, 0x0055ff55); // green
+        ctx->ansi_bright_colours[3] = convert_colour(_ctx, 0x00ffff55); // brown
+        ctx->ansi_bright_colours[4] = convert_colour(_ctx, 0x005555ff); // blue
+        ctx->ansi_bright_colours[5] = convert_colour(_ctx, 0x00ff55ff); // magenta
+        ctx->ansi_bright_colours[6] = convert_colour(_ctx, 0x0055ffff); // cyan
+        ctx->ansi_bright_colours[7] = convert_colour(_ctx, 0x00ffffff); // grey
     }
 
     if (default_bg != NULL) {
-        ctx->default_bg = *default_bg;
+        ctx->default_bg = convert_colour(_ctx, *default_bg);
     } else {
         ctx->default_bg = 0x00000000; // background (black)
     }
 
     if (default_fg != NULL) {
-        ctx->default_fg = *default_fg;
+        ctx->default_fg = convert_colour(_ctx, *default_fg);
     } else {
-        ctx->default_fg = 0x00aaaaaa; // foreground (grey)
+        ctx->default_fg = convert_colour(_ctx, 0x00aaaaaa); // foreground (grey)
     }
 
     if (default_bg_bright != NULL) {
-        ctx->default_bg_bright = *default_bg_bright;
+        ctx->default_bg_bright = convert_colour(_ctx, *default_bg_bright);
     } else {
-        ctx->default_bg_bright = 0x00555555; // background (black)
+        ctx->default_bg_bright = convert_colour(_ctx, 0x00555555); // background (black)
     }
 
     if (default_fg_bright != NULL) {
-        ctx->default_fg_bright = *default_fg_bright;
+        ctx->default_fg_bright = convert_colour(_ctx, *default_fg_bright);
     } else {
-        ctx->default_fg_bright = 0x00ffffff; // foreground (grey)
+        ctx->default_fg_bright = convert_colour(_ctx, 0x00ffffff); // foreground (grey)
     }
 
     ctx->text_fg = ctx->default_fg;
@@ -1046,7 +1081,9 @@ struct flanterm_context *flanterm_fb_init(
         goto fail;
     }
     if (canvas != NULL) {
-        memcpy(ctx->canvas, canvas, ctx->canvas_size);
+        for (size_t i = 0; i < ctx->width * ctx->height; i++) {
+            ctx->canvas[i] = convert_colour(_ctx, canvas[i]);
+        }
     } else {
         for (size_t i = 0; i < ctx->width * ctx->height; i++) {
             ctx->canvas[i] = ctx->default_bg;

@@ -68,6 +68,12 @@ struct flanterm_fb_context {
     size_t height;
     size_t bpp;
 
+#ifdef FLANTERM_FB_SUPPORT_BPP
+    uint8_t red_mask_size, red_mask_shift;
+    uint8_t green_mask_size, green_mask_shift;
+    uint8_t blue_mask_size, blue_mask_shift;
+#endif
+
     size_t font_bits_size;
     uint8_t *font_bits;
     size_t font_bool_size;
@@ -112,6 +118,11 @@ struct flanterm_context *flanterm_fb_init(
     void *(*_malloc)(size_t),
     void (*_free)(void *, size_t),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
+#ifdef FLANTERM_FB_SUPPORT_BPP
+    uint8_t red_mask_size, uint8_t red_mask_shift,
+    uint8_t green_mask_size, uint8_t green_mask_shift,
+    uint8_t blue_mask_size, uint8_t blue_mask_shift,
+#endif
 #ifndef FLANTERM_FB_DISABLE_CANVAS
     uint32_t *canvas,
 #endif
@@ -126,11 +137,22 @@ struct flanterm_context *flanterm_fb_init(
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
 static inline struct flanterm_context *flanterm_fb_simple_init(
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch
+#ifdef FLANTERM_FB_SUPPORT_BPP
+    ,
+    uint8_t red_mask_size, uint8_t red_mask_shift,
+    uint8_t green_mask_size, uint8_t green_mask_shift,
+    uint8_t blue_mask_size, uint8_t blue_mask_shift
+#endif
 ) {
     return flanterm_fb_init(
         NULL,
         NULL,
         framebuffer, width, height, pitch,
+#ifdef FLANTERM_FB_SUPPORT_BPP
+        red_mask_size, red_mask_shift,
+        green_mask_size, green_mask_shift,
+        blue_mask_size, blue_mask_shift,
+#endif
 #ifndef FLANTERM_FB_DISABLE_CANVAS
         NULL,
 #endif
