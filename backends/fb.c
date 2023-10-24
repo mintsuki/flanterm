@@ -401,7 +401,7 @@ static const uint8_t builtin_font[] = {
 };
 
 #ifdef FLANTERM_FB_SUPPORT_BPP
-static __attribute__((always_inline)) uint32_t convert_colour(struct flanterm_context *_ctx, uint32_t colour) {
+static inline __attribute__((always_inline)) uint32_t convert_colour(struct flanterm_context *_ctx, uint32_t colour) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
     uint32_t r = (colour >> 16) & 0xff;
     uint32_t g = (colour >> 8) & 0xff;
