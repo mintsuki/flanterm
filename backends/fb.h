@@ -144,6 +144,17 @@ static inline struct flanterm_context *flanterm_fb_simple_init(
     uint8_t blue_mask_size, uint8_t blue_mask_shift
 #endif
 ) {
+    size_t font_scale_x = 1;
+    size_t font_scale_y = 1;
+    if (width >= (1920 + 1920 / 3) && height >= (1080 + 1080 / 3)) {
+        font_scale_x = 2;
+        font_scale_y = 2;
+    }
+    if (width >= (3840 + 3840 / 3) && height >= (2160 + 2160 / 3)) {
+        font_scale_x = 4;
+        font_scale_y = 4;
+    }
+
     return flanterm_fb_init(
         NULL,
         NULL,
@@ -160,7 +171,7 @@ static inline struct flanterm_context *flanterm_fb_simple_init(
         NULL, NULL,
         NULL, NULL,
         NULL, 0, 0, 1,
-        1, 1,
+        font_scale_x, font_scale_y,
         0
     );
 }
