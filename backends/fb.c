@@ -1007,28 +1007,17 @@ struct flanterm_context *flanterm_fb_init(
         goto fail;
     }
 
+    bool rounding = ((ctx->font_width % 8) != 0) ^ (ctx->font_width == 9);//NOTE and TODO: this is a BODGE, my brain is melting
+
     for (size_t i = 0; i < FLANTERM_FB_FONT_GLYPHS; i++) {
-        uint8_t *glyph = &ctx->font_bits[i * font_height];
+        uint8_t *glyph = ctx->font_bits + i * (ctx->font_height * ((ctx->font_width / 8) + rounding));
 
-        for (size_t y = 0; y < font_height; y++) {
-            // NOTE: the characters in VGA fonts are always one byte wide.
-            // 9 dot wide fonts have 8 dots and one empty column, except
-            // characters 0xC0-0xDF replicate column 9.
-            for (size_t x = 0; x < 8; x++) {
-                size_t offset = i * font_height * ctx->font_width + y * ctx->font_width + x;
+        for (size_t y = 0; y < ctx->font_height; y++) {
+            for (size_t x = 0; x < font_width; x++) {//NOTE: this is not ctx->font_width for a reason, that being you dont want to draw the spacing
+                size_t offset = i * ctx->font_height * ctx->font_width + y * ctx->font_width + x;
 
-                if ((glyph[y] & (0x80 >> x))) {
+                if ((glyph[y * ((ctx->font_width / 8) + rounding) + x / 8] >> (7 - x % 8)) & 1) {
                     ctx->font_bool[offset] = true;
-                } else {
-                    ctx->font_bool[offset] = false;
-                }
-            }
-            // fill columns above 8 like VGA Line Graphics Mode does
-            for (size_t x = 8; x < ctx->font_width; x++) {
-                size_t offset = i * font_height * ctx->font_width + y * ctx->font_width + x;
-
-                if (i >= 0xc0 && i <= 0xdf) {
-                    ctx->font_bool[offset] = (glyph[y] & 1);
                 } else {
                     ctx->font_bool[offset] = false;
                 }
