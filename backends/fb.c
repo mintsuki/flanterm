@@ -1013,10 +1013,20 @@ struct flanterm_context *flanterm_fb_init(
         uint8_t *glyph = ctx->font_bits + i * (ctx->font_height * ((ctx->font_width / 8) + rounding));
 
         for (size_t y = 0; y < ctx->font_height; y++) {
-            for (size_t x = 0; x < font_width; x++) {//NOTE: this is not ctx->font_width for a reason, that being you dont want to draw the spacing
+            for (size_t x = 0; x < font_width; x++) {
                 size_t offset = i * ctx->font_height * ctx->font_width + y * ctx->font_width + x;
 
                 if ((glyph[y * ((ctx->font_width / 8) + rounding) + x / 8] >> (7 - x % 8)) & 1) {
+                    ctx->font_bool[offset] = true;
+                } else {
+                    ctx->font_bool[offset] = false;
+                }
+            }
+            for (size_t x = font_width; x < ctx->font_width; x++) {
+                size_t offset = i * ctx->font_height * ctx->font_width + y * ctx->font_width + x;
+
+                if (((glyph[y * ((ctx->font_width / 8) + rounding) + (font_width - 1) / 8] >> (7 - (font_width - 1) % 8)) & 1)
+                        && i >= 0xc0 && i <= 0xdf) { // repeat the last row but only for special chars
                     ctx->font_bool[offset] = true;
                 } else {
                     ctx->font_bool[offset] = false;
