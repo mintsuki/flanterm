@@ -1218,7 +1218,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         }
 
         ctx->unicode_remaining--;
-        ctx->code_point |= (c & 0x3f) << (6 * ctx->unicode_remaining);
+        ctx->code_point |= (uint64_t)(c & 0x3f) << (6 * ctx->unicode_remaining);
         if (ctx->unicode_remaining != 0) {
             return;
         }
@@ -1226,7 +1226,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         int cc = unicode_to_cp437(ctx->code_point);
 
         if (cc == -1) {
-            size_t replacement_width = mk_wcwidth(ctx->code_point);
+            size_t replacement_width = (size_t)mk_wcwidth(ctx->code_point);
             if (replacement_width > 0) {
                 ctx->raw_putchar(ctx, 0xfe);
             }
@@ -1243,13 +1243,13 @@ unicode_error:
     if (c >= 0xc0 && c <= 0xf7) {
         if (c >= 0xc0 && c <= 0xdf) {
             ctx->unicode_remaining = 1;
-            ctx->code_point = (c & 0x1f) << 6;
+            ctx->code_point = (uint64_t)(c & 0x1f) << 6;
         } else if (c >= 0xe0 && c <= 0xef) {
             ctx->unicode_remaining = 2;
-            ctx->code_point = (c & 0x0f) << (6 * 2);
+            ctx->code_point = (uint64_t)(c & 0x0f) << (6 * 2);
         } else if (c >= 0xf0 && c <= 0xf7) {
             ctx->unicode_remaining = 3;
-            ctx->code_point = (c & 0x07) << (6 * 3);
+            ctx->code_point = (uint64_t)(c & 0x07) << (6 * 3);
         }
         return;
     }
