@@ -1,4 +1,4 @@
-/* Copyright (C) 2022-2023 mintsuki and contributors.
+/* Copyright (C) 2022-2024 mintsuki and contributors.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
