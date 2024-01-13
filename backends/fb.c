@@ -476,6 +476,7 @@ static void plot_char(struct flanterm_context *_ctx, struct flanterm_fb_char *c,
     }
 }
 
+#ifdef FLANTERM_FB_ENABLE_MASKING
 static void plot_char_masked(struct flanterm_context *_ctx, struct flanterm_fb_char *old, struct flanterm_fb_char *c, size_t x, size_t y) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
@@ -517,6 +518,7 @@ static void plot_char_masked(struct flanterm_context *_ctx, struct flanterm_fb_c
         }
     }
 }
+#endif
 
 static inline bool compare_char(struct flanterm_fb_char *a, struct flanterm_fb_char *b) {
     return !(a->c != b->c || a->bg != b->bg || a->fg != b->fg);
@@ -764,8 +766,8 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
         if (ctx->map[offset] == NULL) {
             continue;
         }
-        struct flanterm_fb_char *old = &ctx->grid[offset];
         #ifdef FLANTERM_FB_ENABLE_MASKING
+            struct flanterm_fb_char *old = &ctx->grid[offset];
             if (q->c.bg == old->bg && q->c.fg == old->fg) {
                 plot_char_masked(_ctx, old, &q->c, q->x, q->y);
             } else {
@@ -774,7 +776,6 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
         #else
             plot_char(_ctx, &q->c, q->x, q->y);
         #endif
-        
         ctx->grid[offset] = q->c;
         ctx->map[offset] = NULL;
     }
