@@ -766,7 +766,11 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
         }
         struct flanterm_fb_char *old = &ctx->grid[offset];
         #ifdef FLANTERM_FB_ENABLE_MASKING
-            plot_char_masked(_ctx, old, &q->c, q->x, q->y);
+            if (q->c.bg == old->bg && q->c.fg == old->fg) {
+                plot_char_masked(_ctx, old, &q->c, q->x, q->y);
+            } else {
+                plot_char(_ctx, &q->c, q->x, q->y);
+            }
         #else
             plot_char(_ctx, &q->c, q->x, q->y);
         #endif
