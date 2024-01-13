@@ -435,6 +435,12 @@ static void flanterm_fb_swap_palette(struct flanterm_context *_ctx) {
     ctx->text_fg = tmp;
 }
 
+bool flanterm_toggle_masking(struct flanterm_context *_ctx)
+{
+    _ctx->masking_enabled = (_ctx->masking_enabled) ? false : true;
+    return _ctx->masking_enabled;
+}
+
 static void plot_char(struct flanterm_context *_ctx, struct flanterm_fb_char *c, size_t x, size_t y) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
@@ -476,7 +482,7 @@ static void plot_char(struct flanterm_context *_ctx, struct flanterm_fb_char *c,
     }
 }
 
-static void plot_char_fast(struct flanterm_context *_ctx, struct flanterm_fb_char *old, struct flanterm_fb_char *c, size_t x, size_t y) {
+static void plot_char_masked(struct flanterm_context *_ctx, struct flanterm_fb_char *old, struct flanterm_fb_char *c, size_t x, size_t y) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (x >= _ctx->cols || y >= _ctx->rows) {
@@ -765,8 +771,8 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
             continue;
         }
         struct flanterm_fb_char *old = &ctx->grid[offset];
-        if (q->c.bg == old->bg && q->c.fg == old->fg) {
-            plot_char_fast(_ctx, old, &q->c, q->x, q->y);
+        if (q->c.bg == old->bg && q->c.fg == old->fg && _ctx->masking_enabled) {
+            plot_char_masked(_ctx, old, &q->c, q->x, q->y);
         } else {
             plot_char(_ctx, &q->c, q->x, q->y);
         }

@@ -61,6 +61,7 @@ struct flanterm_context {
     bool autoflush;
     bool cursor_enabled;
     bool scroll_enabled;
+    bool masking_enabled;
     bool control_sequence;
     bool csi;
     bool escape;
@@ -123,6 +124,7 @@ struct flanterm_context {
     void (*full_refresh)(struct flanterm_context *);
     void (*deinit)(struct flanterm_context *, void (*)(void *, size_t));
 
+
     /* to be set by client */
 
     void (*callback)(struct flanterm_context *, uint64_t, uint64_t, uint64_t, uint64_t);
@@ -130,6 +132,7 @@ struct flanterm_context {
 
 void flanterm_context_reinit(struct flanterm_context *ctx);
 void flanterm_write(struct flanterm_context *ctx, const char *buf, size_t count);
+bool flanterm_toggle_masking(struct flanterm_context *_ctx);
 
 #ifdef __cplusplus
 }

@@ -99,6 +99,7 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
     ctx->oob_output = FLANTERM_OOB_OUTPUT_ONLCR;
+    ctx->masking_enabled = true;
 }
 
 static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c);
