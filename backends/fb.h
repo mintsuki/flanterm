@@ -23,8 +23,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _FLANTERM_FB_H
-#define _FLANTERM_FB_H 1
+#ifndef FLANTERM_FB_H
+#define FLANTERM_FB_H 1
 
 #ifdef __cplusplus
 extern "C" {
