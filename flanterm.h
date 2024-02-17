@@ -130,6 +130,7 @@ struct flanterm_context {
 
 void flanterm_context_reinit(struct flanterm_context *ctx);
 void flanterm_write(struct flanterm_context *ctx, const char *buf, size_t count);
+void flanterm_putchar(struct flanterm_context *ctx, uint8_t c);
 
 #ifdef __cplusplus
 }
