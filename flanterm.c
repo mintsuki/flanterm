@@ -101,8 +101,6 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->oob_output = FLANTERM_OOB_OUTPUT_ONLCR;
 }
 
-static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c);
-
 void flanterm_write(struct flanterm_context *ctx, const char *buf, size_t count) {
     for (size_t i = 0; i < count; i++) {
         flanterm_putchar(ctx, buf[i]);
