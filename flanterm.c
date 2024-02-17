@@ -1196,7 +1196,7 @@ static int unicode_to_cp437(uint64_t code_point) {
     return -1;
 }
 
-static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
+void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->discard_next || (c == 0x18 || c == 0x1a)) {
         ctx->discard_next = false;
         ctx->escape = false;
