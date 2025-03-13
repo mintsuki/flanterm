@@ -88,6 +88,10 @@ struct flanterm_fb_context {
 
     size_t canvas_size;
     uint32_t *canvas;
+    uint32_t *sixel_canvas;
+
+    size_t sixel_start_y;
+    size_t sixel_end_y;
 
     size_t grid_size;
     size_t queue_size;

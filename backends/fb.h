@@ -43,9 +43,9 @@ extern "C" {
 #endif
 
 struct flanterm_context *flanterm_fb_init(
-    /* If _malloc and _free are nulled, use the bump allocated instance (1 use only). */
+    /* If _malloc and _free are NULL, sixel support is disabled */
     void *(*_malloc)(size_t),
-    void (*_free)(void *, size_t),
+    void (*_free)(void *),
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
     uint8_t red_mask_size, uint8_t red_mask_shift,
     uint8_t green_mask_size, uint8_t green_mask_shift,
