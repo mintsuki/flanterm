@@ -91,7 +91,9 @@ struct flanterm_fb_context {
     uint32_t *sixel_canvas;
 
     size_t sixel_start_y;
+    size_t sixel_start_x;
     size_t sixel_end_y;
+    size_t sixel_end_x;
 
     size_t grid_size;
     size_t queue_size;

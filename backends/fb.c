@@ -682,6 +682,7 @@ static void flanterm_fb_revscroll(struct flanterm_context *_ctx) {
     }
 }
 
+static void flanterm_fb_sixel_refresh(struct flanterm_context *_ctx, size_t start_y, size_t height);
 static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
@@ -706,13 +707,25 @@ static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
         push_to_queue(_ctx, &empty, i, _ctx->scroll_bottom_margin - 1);
     }
 
+    if (!_ctx->sixel_supported) {
+        return;
+    }
+
     size_t sixel_src_y = ctx->sixel_start_y;
     size_t sixel_dest_y = 0;
-    if (sixel_src_y) {
-        sixel_dest_y = --ctx->sixel_start_y;
-        if (sixel_dest_y == 0) {
-            ctx->sixel_start_y = 1;
-        }
+
+    switch (sixel_src_y) {
+        case 0:
+            sixel_src_y = 1;
+            sixel_dest_y = 0;
+            break;
+        case 1:
+            ctx->sixel_start_y = 0;
+            sixel_dest_y = 0;
+            break;
+        default:
+            sixel_dest_y = --ctx->sixel_start_y;
+            break;
     }
 
     size_t sixel_end_y = ctx->sixel_end_y ? ctx->sixel_end_y-- : 0;
@@ -720,14 +733,22 @@ static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
         return;
     }
 
-    memmove(ctx->sixel_canvas + sixel_dest_y * ctx->glyph_height * ctx->width,
-            ctx->sixel_canvas + sixel_src_y * ctx->glyph_height * ctx->width,
-            (sixel_end_y - sixel_src_y) * ctx->glyph_height * ctx->width * sizeof(uint32_t));
+    for (size_t cy = 0; cy < (sixel_end_y - sixel_src_y); cy++) {
+        for (size_t line = 0; line < ctx->glyph_height; line++) {
+            size_t offset = line * ctx->width;
+            memcpy(ctx->sixel_canvas + (cy + sixel_dest_y) * ctx->glyph_height * ctx->width + offset + ctx->sixel_start_x * ctx->glyph_width,
+                   ctx->sixel_canvas + (cy + sixel_src_y) * ctx->glyph_height * ctx->width + offset + ctx->sixel_start_x * ctx->glyph_width,
+                   (ctx->sixel_end_x - ctx->sixel_start_x) * ctx->glyph_width * sizeof(uint32_t));
+        }
+    }
 
-    memset(ctx->sixel_canvas + ((sixel_end_y - 1) * ctx->glyph_height * ctx->width), 0,
-           ctx->glyph_height * ctx->width * sizeof(uint32_t));
+    for (size_t cy = 0; cy < ctx->glyph_height; cy++) {
+        size_t offset = cy * ctx->width;
+        memset(ctx->sixel_canvas + (sixel_end_y - 1) * ctx->glyph_height * ctx->width + offset + ctx->sixel_start_x * ctx->glyph_width, 0,
+               (ctx->sixel_end_x - ctx->sixel_start_x) * ctx->glyph_width * sizeof(uint32_t));
+    }
 
-    _ctx->should_flush = true;
+    flanterm_fb_sixel_refresh(_ctx, sixel_end_y - 1, 1);
 }
 
 static void flanterm_fb_clear(struct flanterm_context *_ctx, bool move) {
@@ -917,9 +938,12 @@ static void flanterm_fb_draw_sixel(struct flanterm_context *_ctx, uint8_t *pixel
 
     ctx->cursor_y += DIV_ROUNDUP(real_height, ctx->glyph_height);
     while (ctx->cursor_y >= _ctx->rows) {
-        ctx->cursor_y--;
         start_cur_y--;
+        ctx->cursor_y--;
         flanterm_fb_scroll(_ctx);
+        if (ctx->cursor_y == _ctx->rows) {
+            ctx->cursor_y--;
+        }
     }
 
     if (start_cur_y < 0) {
@@ -937,10 +961,16 @@ static void flanterm_fb_draw_sixel(struct flanterm_context *_ctx, uint8_t *pixel
         }
     }
 
+    flanterm_free(pixels);
+    flanterm_free(palette);
+
     ctx->sixel_start_y = ctx->sixel_end_y ? MIN((size_t)start_cur_y, ctx->sixel_start_y) : start_cur_y;
     ctx->sixel_end_y = MIN(MAX(start_cur_y + DIV_ROUNDUP(real_height, ctx->glyph_height), ctx->sixel_end_y), _ctx->rows);
 
-    _ctx->should_flush = true;
+    ctx->sixel_start_x = ctx->sixel_end_x ? MIN((size_t)start_cur_x, ctx->sixel_start_x) : start_cur_x;
+    ctx->sixel_end_x = MIN(MAX(start_cur_x + DIV_ROUNDUP(real_width, ctx->glyph_width), ctx->sixel_end_x), _ctx->cols);
+
+    flanterm_fb_sixel_refresh(_ctx,ctx->sixel_start_y, ctx->sixel_end_y - ctx->sixel_start_y);
 }
 
 #undef DIV_ROUNDUP
@@ -1033,6 +1063,42 @@ static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
 
     if (_ctx->cursor_enabled) {
         draw_cursor(_ctx);
+    }
+}
+
+static void flanterm_fb_sixel_refresh(struct flanterm_context *_ctx, size_t start_y, size_t height) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
+
+    uint32_t default_bg = ctx->default_bg;
+
+    for (size_t y = (start_y * ctx->glyph_height); y < ((start_y + height) * ctx->glyph_height); y++) {
+        size_t end = ((ctx->sixel_start_x + (ctx->sixel_end_x - ctx->sixel_start_x)) * ctx->glyph_width);
+        for (size_t x = (ctx->sixel_start_x * ctx->glyph_width); x < end; x++) {
+            volatile uint32_t *fb_line = ctx->framebuffer + y * (ctx->pitch / 4) + x;
+            size_t idx = y * ctx->width + x;
+            if (ctx->canvas != NULL) {
+                uint32_t colour = ctx->canvas[idx];
+                if (ctx->sixel_canvas != NULL && ctx->sixel_canvas[idx]) {
+                    colour = ctx->sixel_canvas[idx];
+                }
+                *fb_line = colour;
+            } else {
+                uint32_t colour = default_bg;
+                if (ctx->sixel_canvas != NULL && ctx->sixel_canvas[idx]) {
+                    colour = ctx->sixel_canvas[idx];
+                }
+                *fb_line = colour;
+            }
+        }
+    }
+
+    for (size_t cy = ctx->sixel_start_y; cy < ctx->sixel_end_y; cy++) {
+        for (size_t i = cy * _ctx->cols + ctx->sixel_start_x; i < (cy * _ctx->cols + ctx->sixel_end_x); i++) {
+            size_t x = i % _ctx->cols;
+            size_t y = i / _ctx->cols;
+
+            ctx->plot_char(_ctx, &ctx->grid[i], x, y);
+        }
     }
 }
 

@@ -82,7 +82,6 @@ static const uint32_t col256[] = {
 void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->tab_size = 8;
     ctx->autoflush = true;
-    ctx->should_flush = false;
     ctx->cursor_enabled = true;
     ctx->scroll_enabled = true;
     ctx->control_sequence = false;
@@ -170,11 +169,6 @@ void flanterm_write(struct flanterm_context *ctx, const char *buf, size_t count)
 
     if (ctx->autoflush) {
         ctx->double_buffer_flush(ctx);
-    }
-
-    if (ctx->should_flush) {
-        ctx->full_refresh(ctx);
-        ctx->should_flush = false;
     }
 }
 

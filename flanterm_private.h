@@ -46,7 +46,6 @@ struct flanterm_context {
     size_t tab_size;
     bool autoflush;
     bool sixel_supported;
-    bool should_flush;
     bool cursor_enabled;
     bool scroll_enabled;
     bool control_sequence;
