@@ -42,7 +42,6 @@
 
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
-void *memmove(void *, const void *, size_t);
 
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
 
