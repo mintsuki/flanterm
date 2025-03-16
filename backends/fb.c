@@ -713,8 +713,11 @@ static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
     size_t sixel_src_y = ctx->sixel_start_y;
     size_t sixel_dest_y = 0;
 
+    bool last = false;
+
     switch (sixel_src_y) {
         case 0:
+            last = true;
             sixel_src_y = 1;
             sixel_dest_y = 0;
             break;
@@ -728,6 +731,9 @@ static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
     }
 
     size_t sixel_end_y = ctx->sixel_end_y ? ctx->sixel_end_y-- : 0;
+    if (sixel_end_y == 1 && last)
+        goto clear;
+
     if (!sixel_end_y || sixel_src_y >= sixel_end_y) {
         return;
     }
@@ -741,6 +747,7 @@ static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
         }
     }
 
+clear:
     for (size_t cy = 0; cy < ctx->glyph_height; cy++) {
         size_t offset = cy * ctx->width;
         memset(ctx->sixel_canvas + (sixel_end_y - 1) * ctx->glyph_height * ctx->width + offset + ctx->sixel_start_x * ctx->glyph_width, 0,
