@@ -61,6 +61,8 @@ struct flanterm_context *flanterm_fb_init(
     size_t margin
 );
 
+void flanterm_fb_set_flush_callback(struct flanterm_context *ctx, void (*flush_callback)(volatile void *address, size_t length));
+
 #ifdef __cplusplus
 }
 #endif

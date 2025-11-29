@@ -55,6 +55,7 @@ struct flanterm_fb_context {
     struct flanterm_context term;
 
     void (*plot_char)(struct flanterm_context *ctx, struct flanterm_fb_char *c, size_t x, size_t y);
+    void (*flush_callback)(volatile void *address, size_t length);
 
     size_t font_width;
     size_t font_height;

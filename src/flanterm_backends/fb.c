@@ -841,6 +841,10 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
     ctx->old_cursor_y = ctx->cursor_y;
 
     ctx->queue_i = 0;
+
+    if (ctx->flush_callback) {
+        ctx->flush_callback(ctx->framebuffer, ctx->pitch * ctx->height);
+    }
 }
 
 static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
@@ -889,6 +893,10 @@ static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
 
     if (_ctx->cursor_enabled) {
         draw_cursor(_ctx);
+    }
+
+    if (ctx->flush_callback) {
+        ctx->flush_callback(ctx->framebuffer, ctx->pitch * ctx->height);
     }
 }
 
@@ -1251,4 +1259,9 @@ fail:
     }
 
     return NULL;
+}
+
+void flanterm_fb_set_flush_callback(struct flanterm_context *_ctx, void (*flush_callback)(volatile void *address, size_t length)) {
+    struct flanterm_fb_context *ctx = (void *)_ctx;
+    ctx->flush_callback = flush_callback;
 }
