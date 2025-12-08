@@ -77,6 +77,8 @@ struct flanterm_fb_context {
     uint8_t green_mask_size, green_mask_shift;
     uint8_t blue_mask_size, blue_mask_shift;
 
+    int rotation;
+
     size_t font_bits_size;
     uint8_t *font_bits;
     size_t font_bool_size;
