@@ -1084,7 +1084,7 @@ int mk_wcwidth(uint32_t ucs) {
   if (ucs == 0)
     return 0;
   if (ucs < 32 || (ucs >= 0x7f && ucs < 0xa0))
-    return 1;
+    return -1;
 
   /* binary search in table of non-spacing characters */
   if (bisearch(ucs, combining,
@@ -1305,11 +1305,11 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         int cc = unicode_to_cp437(ctx->code_point);
 
         if (cc == -1) {
-            size_t replacement_width = (size_t)mk_wcwidth(ctx->code_point);
+            int replacement_width = mk_wcwidth(ctx->code_point);
             if (replacement_width > 0) {
                 ctx->raw_putchar(ctx, 0xfe);
             }
-            for (size_t i = 1; i < replacement_width; i++) {
+            for (int i = 1; i < replacement_width; i++) {
                 ctx->raw_putchar(ctx, ' ');
             }
         } else {
