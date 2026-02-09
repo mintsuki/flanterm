@@ -1413,13 +1413,15 @@ unicode_error:
             ctx->escape_offset = 0;
             ctx->escape = true;
             return;
-        case '\t':
-            if ((x / ctx->tab_size + 1) >= ctx->cols) {
+        case '\t': {
+            size_t next_tab = (x / ctx->tab_size + 1) * ctx->tab_size;
+            if (next_tab >= ctx->cols) {
                 ctx->set_cursor_pos(ctx, ctx->cols - 1, y);
                 return;
             }
-            ctx->set_cursor_pos(ctx, (x / ctx->tab_size + 1) * ctx->tab_size, y);
+            ctx->set_cursor_pos(ctx, next_tab, y);
             return;
+        }
         case 0x0b:
         case 0x0c:
         case '\n':
