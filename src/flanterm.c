@@ -872,7 +872,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                 ctx->scroll_top_margin = 0;
                 ctx->scroll_bottom_margin = ctx->rows;
             }
-            ctx->set_cursor_pos(ctx, 0, 0);
+            ctx->set_cursor_pos(ctx, 0, ctx->origin_mode ? ctx->scroll_top_margin : 0);
             break;
         case 'l':
         case 'h':
