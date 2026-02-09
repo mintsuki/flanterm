@@ -910,9 +910,9 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
             // "Reverse linefeed"
             if (y == ctx->scroll_top_margin) {
                 ctx->revscroll(ctx);
-                ctx->set_cursor_pos(ctx, 0, y);
+                ctx->set_cursor_pos(ctx, x, y);
             } else {
-                ctx->set_cursor_pos(ctx, 0, y - 1);
+                ctx->set_cursor_pos(ctx, x, y - 1);
             }
             break;
         case 'Z':
