@@ -1547,15 +1547,19 @@ unicode_error:
     }
 
     if (ctx->g_select) {
-        ctx->g_select--;
-        switch (c) {
-            case 'B':
-                ctx->charsets[ctx->g_select] = CHARSET_DEFAULT; break;
-            case '0':
-                ctx->charsets[ctx->g_select] = CHARSET_DEC_SPECIAL; break;
+        if (c <= 0x1f || c == 0x7f) {
+            ctx->g_select = 0;
+        } else {
+            ctx->g_select--;
+            switch (c) {
+                case 'B':
+                    ctx->charsets[ctx->g_select] = CHARSET_DEFAULT; break;
+                case '0':
+                    ctx->charsets[ctx->g_select] = CHARSET_DEC_SPECIAL; break;
+            }
+            ctx->g_select = 0;
+            return;
         }
-        ctx->g_select = 0;
-        return;
     }
 
     if ((c <= 0x1f && c != 0x1b) || c == 0x7f) {
