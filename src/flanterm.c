@@ -1319,14 +1319,14 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     }
 
 unicode_error:
-    if (c >= 0xc0 && c <= 0xf7) {
-        if (c >= 0xc0 && c <= 0xdf) {
+    if (c >= 0xc2 && c <= 0xf4) {
+        if (c >= 0xc2 && c <= 0xdf) {
             ctx->unicode_remaining = 1;
             ctx->code_point = (uint64_t)(c & 0x1f) << 6;
         } else if (c >= 0xe0 && c <= 0xef) {
             ctx->unicode_remaining = 2;
             ctx->code_point = (uint64_t)(c & 0x0f) << (6 * 2);
-        } else if (c >= 0xf0 && c <= 0xf7) {
+        } else if (c >= 0xf0 && c <= 0xf4) {
             ctx->unicode_remaining = 3;
             ctx->code_point = (uint64_t)(c & 0x07) << (6 * 3);
         }
