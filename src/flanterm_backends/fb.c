@@ -446,7 +446,17 @@ static ALWAYS_INLINE uint32_t convert_colour(struct flanterm_context *_ctx, uint
     uint32_t r = (colour >> 16) & 0xff;
     uint32_t g = (colour >> 8) & 0xff;
     uint32_t b =  colour & 0xff;
-    return (r << ctx->red_mask_shift) | (g << ctx->green_mask_shift) | (b << ctx->blue_mask_shift);
+    uint32_t ret = (r << ctx->red_mask_shift) | (g << ctx->green_mask_shift) | (b << ctx->blue_mask_shift);
+    if (ctx->red_mask_size > 8) {
+        ret |= (r >> (16 - ctx->red_mask_size)) << (ctx->red_mask_shift + 8);
+    }
+    if (ctx->green_mask_size > 8) {
+        ret |= (g >> (16 - ctx->green_mask_size)) << (ctx->green_mask_shift + 8);
+    }
+    if (ctx->blue_mask_size > 8) {
+        ret |= (b >> (16 - ctx->blue_mask_size)) << (ctx->blue_mask_shift + 8);
+    }
+    return ret;
 }
 
 static void flanterm_fb_save_state(struct flanterm_context *_ctx) {
