@@ -617,9 +617,11 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
     ctx->get_cursor_pos(ctx, &x, &y);
 
     switch (c) {
-        // Got ESC in the middle of an escape sequence, start a new one
+        // ESC aborts the current CSI and starts a new escape sequence
         case 0x1B:
             ctx->scroll_enabled = r;
+            ctx->control_sequence = false;
+            ctx->escape_offset = 0;
             return;
         case 'F':
             x = 0;
