@@ -1213,7 +1213,8 @@ struct flanterm_context *flanterm_fb_init(
     ctx->phys_height = phys_height;
     ctx->pitch = pitch;
 
-#define FONT_BYTES ((font_width * font_height * FLANTERM_FB_FONT_GLYPHS) / 8)
+    // VGA fonts are always one byte per scanline regardless of font_width
+#define FONT_BYTES (font_height * FLANTERM_FB_FONT_GLYPHS)
 
     if (font != NULL) {
         ctx->font_width = font_width;
