@@ -669,14 +669,18 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             }
             break;
         case 'd':
-            ctx->esc_values[0] -= 1;
+            if (ctx->esc_values[0] != 0) {
+                ctx->esc_values[0]--;
+            }
             if (ctx->esc_values[0] >= ctx->rows)
                 ctx->esc_values[0] = ctx->rows - 1;
             ctx->set_cursor_pos(ctx, x, ctx->esc_values[0]);
             break;
         case 'G':
         case '`':
-            ctx->esc_values[0] -= 1;
+            if (ctx->esc_values[0] != 0) {
+                ctx->esc_values[0]--;
+            }
             if (ctx->esc_values[0] >= ctx->cols)
                 ctx->esc_values[0] = ctx->cols - 1;
             ctx->set_cursor_pos(ctx, ctx->esc_values[0], y);
