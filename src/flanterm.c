@@ -1476,7 +1476,7 @@ unicode_error:
         ctx->last_printed_char = c;
         ctx->last_was_graphic = true;
         ctx->raw_putchar(ctx, c);
-    } else {
+    } else if (c >= 0x80) {
         ctx->last_printed_char = 0xfe;
         ctx->last_was_graphic = true;
         ctx->raw_putchar(ctx, 0xfe);
