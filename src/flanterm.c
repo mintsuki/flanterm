@@ -1588,6 +1588,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
 
 unicode_error:
     if (c >= 0xc2 && c <= 0xf4) {
+        ctx->g_select = 0;
         if (c >= 0xc2 && c <= 0xdf) {
             ctx->unicode_remaining = 1;
             ctx->code_point = (uint64_t)(c & 0x1f) << 6;
