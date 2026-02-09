@@ -153,7 +153,9 @@ def:
 
         else if (ctx->esc_values[i] == 1) {
             ctx->bold = true;
-            if (ctx->current_primary != (size_t)-1) {
+            if (ctx->current_primary == (size_t)-2) {
+                // RGB/256-color; bold does not alter the colour
+            } else if (ctx->current_primary != (size_t)-1) {
                 if (!ctx->reverse_video) {
                     ctx->set_text_fg_bright(ctx, ctx->current_primary);
                 } else {
@@ -171,7 +173,9 @@ def:
 
         else if (ctx->esc_values[i] == 5) {
             ctx->bg_bold = true;
-            if (ctx->current_bg != (size_t)-1) {
+            if (ctx->current_bg == (size_t)-2) {
+                // RGB/256-color; bold does not alter the colour
+            } else if (ctx->current_bg != (size_t)-1) {
                 if (!ctx->reverse_video) {
                     ctx->set_text_bg_bright(ctx, ctx->current_bg);
                 } else {
@@ -189,7 +193,9 @@ def:
 
         else if (ctx->esc_values[i] == 22) {
             ctx->bold = false;
-            if (ctx->current_primary != (size_t)-1) {
+            if (ctx->current_primary == (size_t)-2) {
+                // RGB/256-color; unbold does not alter the colour
+            } else if (ctx->current_primary != (size_t)-1) {
                 if (!ctx->reverse_video) {
                     ctx->set_text_fg(ctx, ctx->current_primary);
                 } else {
@@ -207,7 +213,9 @@ def:
 
         else if (ctx->esc_values[i] == 25) {
             ctx->bg_bold = false;
-            if (ctx->current_bg != (size_t)-1) {
+            if (ctx->current_bg == (size_t)-2) {
+                // RGB/256-color; unbold does not alter the colour
+            } else if (ctx->current_bg != (size_t)-1) {
                 if (!ctx->reverse_video) {
                     ctx->set_text_bg(ctx, ctx->current_bg);
                 } else {
@@ -364,6 +372,12 @@ set_bg_bright:
 
                     i += 3;
 
+                    if (fg) {
+                        ctx->current_primary = (size_t)-2;
+                    } else {
+                        ctx->current_bg = (size_t)-2;
+                    }
+
                     (fg ? ctx->set_text_fg_rgb : ctx->set_text_bg_rgb)(ctx, rgb_value);
 
                     break;
@@ -378,10 +392,25 @@ set_bg_bright:
                     i++;
 
                     if (col < 8) {
+                        if (fg) {
+                            ctx->current_primary = col;
+                        } else {
+                            ctx->current_bg = col;
+                        }
                         (fg ? ctx->set_text_fg : ctx->set_text_bg)(ctx, col);
                     } else if (col < 16) {
+                        if (fg) {
+                            ctx->current_primary = col - 8;
+                        } else {
+                            ctx->current_bg = col - 8;
+                        }
                         (fg ? ctx->set_text_fg_bright : ctx->set_text_bg_bright)(ctx, col - 8);
                     } else if (col < 256) {
+                        if (fg) {
+                            ctx->current_primary = (size_t)-2;
+                        } else {
+                            ctx->current_bg = (size_t)-2;
+                        }
                         uint32_t rgb_value = col256[col - 16];
                         (fg ? ctx->set_text_fg_rgb : ctx->set_text_bg_rgb)(ctx, rgb_value);
                     }
