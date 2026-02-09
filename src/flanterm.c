@@ -461,37 +461,35 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
             return;
     }
 
-    switch (ctx->esc_values[0]) {
-        case 6: {
-            ctx->origin_mode = set;
-            ctx->set_cursor_pos(ctx, 0, set ? ctx->scroll_top_margin : 0);
-            return;
-        }
-        case 7: {
-            ctx->wrap_enabled = set;
-            return;
-        }
-        case 25: {
-            ctx->cursor_enabled = set;
-            return;
-        }
-        case 1049: {
-            if (set) {
-                ctx->clear(ctx, true);
-            } else {
-                if (ctx->reverse_video) {
-                    ctx->reverse_video = false;
-                    ctx->swap_palette(ctx);
+    for (size_t i = 0; i < ctx->esc_values_i; i++) {
+        switch (ctx->esc_values[i]) {
+            case 6:
+                ctx->origin_mode = set;
+                ctx->set_cursor_pos(ctx, 0, set ? ctx->scroll_top_margin : 0);
+                break;
+            case 7:
+                ctx->wrap_enabled = set;
+                break;
+            case 25:
+                ctx->cursor_enabled = set;
+                break;
+            case 1049:
+                if (set) {
+                    ctx->clear(ctx, true);
+                } else {
+                    if (ctx->reverse_video) {
+                        ctx->reverse_video = false;
+                        ctx->swap_palette(ctx);
+                    }
+                    ctx->bold = false;
+                    ctx->bg_bold = false;
+                    ctx->current_primary = (size_t)-1;
+                    ctx->current_bg = (size_t)-1;
+                    ctx->set_text_bg_default(ctx);
+                    ctx->set_text_fg_default(ctx);
+                    ctx->clear(ctx, true);
                 }
-                ctx->bold = false;
-                ctx->bg_bold = false;
-                ctx->current_primary = (size_t)-1;
-                ctx->current_bg = (size_t)-1;
-                ctx->set_text_bg_default(ctx);
-                ctx->set_text_fg_default(ctx);
-                ctx->clear(ctx, true);
-            }
-            return;
+                break;
         }
     }
 
