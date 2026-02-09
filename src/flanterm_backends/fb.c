@@ -730,6 +730,9 @@ static void push_to_queue(struct flanterm_context *_ctx, struct flanterm_fb_char
         if (compare_char(&ctx->grid[i], c)) {
             return;
         }
+        if (ctx->queue_i == _ctx->rows * _ctx->cols) {
+            return;
+        }
         q = &ctx->queue[ctx->queue_i++];
         q->x = x;
         q->y = y;
