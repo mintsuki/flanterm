@@ -1581,6 +1581,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->unicode_remaining != 0) {
         if ((c & 0xc0) != 0x80) {
             ctx->unicode_remaining = 0;
+            ctx->raw_putchar(ctx, 0xfe);
             goto unicode_error;
         }
 
