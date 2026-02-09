@@ -371,6 +371,10 @@ set_bg_bright:
         else if (ctx->esc_values[i] == 38 || ctx->esc_values[i] == 48) {
             bool fg = ctx->esc_values[i] == 38;
 
+            if (ctx->reverse_video) {
+                fg = !fg;
+            }
+
             i++;
             if (i >= ctx->esc_values_i) {
                 break;
