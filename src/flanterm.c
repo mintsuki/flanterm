@@ -1685,11 +1685,8 @@ unicode_error:
     }
 
     if (ctx->insert_mode == true) {
-        for (size_t i = ctx->cols - 1; ; i--) {
-            ctx->move_character(ctx, i + 1, y, i, y);
-            if (i == x) {
-                break;
-            }
+        for (size_t i = ctx->cols - 1; i > x; i--) {
+            ctx->move_character(ctx, i, y, i - 1, y);
         }
     }
 
