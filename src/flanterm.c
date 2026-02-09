@@ -812,7 +812,10 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             ctx->set_cursor_pos(ctx, ctx->cols - ctx->esc_values[0], y);
             // FALLTHRU
         case 'X': {
-            size_t count = ctx->esc_values[0] > ctx->cols ? ctx->cols : ctx->esc_values[0];
+            size_t cx, cy;
+            ctx->get_cursor_pos(ctx, &cx, &cy);
+            size_t remaining = ctx->cols - cx;
+            size_t count = ctx->esc_values[0] > remaining ? remaining : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++)
                 ctx->raw_putchar(ctx, ' ');
             ctx->set_cursor_pos(ctx, x, y);
