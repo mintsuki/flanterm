@@ -583,11 +583,6 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         goto cleanup;
     }
 
-    bool r = ctx->scroll_enabled;
-    ctx->scroll_enabled = false;
-    size_t x, y;
-    ctx->get_cursor_pos(ctx, &x, &y);
-   
     // CSI sequences are terminated by a byte in [0x40,0x7E]
     // so skip all bytes until the terminator byte
     if (ctx->csi_unhandled) {
@@ -598,9 +593,15 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         return;
     }
 
+    bool r = ctx->scroll_enabled;
+    ctx->scroll_enabled = false;
+    size_t x, y;
+    ctx->get_cursor_pos(ctx, &x, &y);
+
     switch (c) {
         // Got ESC in the middle of an escape sequence, start a new one
         case 0x1B:
+            ctx->scroll_enabled = r;
             return;
         case 'F':
             x = 0;
@@ -881,6 +882,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             linux_private_parse(ctx);
             break;
         default:
+            ctx->scroll_enabled = r;
             ctx->csi_unhandled = true;
             return;
     }
