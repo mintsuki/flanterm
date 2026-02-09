@@ -769,8 +769,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                 }
                 case 1: {
                     ctx->set_cursor_pos(ctx, 0, y);
-                    for (size_t i = 0; i < x; i++)
+                    for (size_t i = 0; i <= x; i++)
                         ctx->raw_putchar(ctx, ' ');
+                    ctx->set_cursor_pos(ctx, x, y);
                     break;
                 }
                 case 2: {
