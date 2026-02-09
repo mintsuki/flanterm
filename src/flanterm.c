@@ -112,6 +112,8 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->saved_cursor_y = 0;
     ctx->current_primary = (size_t)-1;
     ctx->current_bg = (size_t)-1;
+    ctx->saved_state_current_primary = (size_t)-1;
+    ctx->saved_state_current_bg = (size_t)-1;
     ctx->last_printed_char = ' ';
     ctx->last_was_graphic = false;
     ctx->scroll_top_margin = 0;
