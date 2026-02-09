@@ -1433,7 +1433,9 @@ unicode_error:
             }
             return;
         case '\b':
-            ctx->set_cursor_pos(ctx, x - 1, y);
+            if (x > 0) {
+                ctx->set_cursor_pos(ctx, x - 1, y);
+            }
             return;
         case '\r':
             ctx->set_cursor_pos(ctx, 0, y);
