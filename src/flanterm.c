@@ -955,7 +955,12 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
             restore_state(ctx);
             break;
         case 'c':
+            if (ctx->reverse_video) {
+                ctx->swap_palette(ctx);
+            }
             flanterm_context_reinit(ctx);
+            ctx->set_text_bg_default(ctx);
+            ctx->set_text_fg_default(ctx);
             ctx->clear(ctx, true);
             break;
         case 'D':
