@@ -592,6 +592,57 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         }
     }
 
+    // C0 control characters are executed immediately within CSI sequences
+    // (except ESC which is handled later, and CAN/SUB which are handled by the caller)
+    if (c < 0x20 && c != 0x1b) {
+        size_t x, y;
+        switch (c) {
+            case '\a':
+                if (ctx->callback != NULL) {
+                    ctx->callback(ctx, FLANTERM_CB_BELL, 0, 0, 0);
+                }
+                break;
+            case '\b':
+                ctx->get_cursor_pos(ctx, &x, &y);
+                if (x > 0) {
+                    ctx->set_cursor_pos(ctx, x - 1, y);
+                }
+                break;
+            case '\t':
+                ctx->get_cursor_pos(ctx, &x, &y);
+                x = (x / ctx->tab_size + 1) * ctx->tab_size;
+                if (x >= ctx->cols) {
+                    x = ctx->cols - 1;
+                }
+                ctx->set_cursor_pos(ctx, x, y);
+                break;
+            case 0x0b:
+            case 0x0c:
+            case '\n':
+                ctx->get_cursor_pos(ctx, &x, &y);
+                if (y == ctx->scroll_bottom_margin - 1) {
+                    ctx->scroll(ctx);
+                    ctx->set_cursor_pos(ctx, x, y);
+                } else {
+                    ctx->set_cursor_pos(ctx, x, y + 1);
+                }
+                break;
+            case '\r':
+                ctx->get_cursor_pos(ctx, &x, &y);
+                ctx->set_cursor_pos(ctx, 0, y);
+                break;
+            case 14:
+                ctx->current_charset = 1;
+                break;
+            case 15:
+                ctx->current_charset = 0;
+                break;
+            default:
+                break;
+        }
+        return;
+    }
+
     if (c >= '0' && c <= '9') {
         if (ctx->esc_values_i == FLANTERM_MAX_ESC_VALUES) {
             return;
