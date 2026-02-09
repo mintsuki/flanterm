@@ -175,6 +175,13 @@ def:
             continue;
         }
 
+        else if (ctx->esc_values[i] == 2
+              || ctx->esc_values[i] == 3
+              || ctx->esc_values[i] == 4
+              || ctx->esc_values[i] == 8) {
+            continue;
+        }
+
         else if (ctx->esc_values[i] == 5) {
             ctx->bg_bold = true;
             if (ctx->current_bg == (size_t)-2) {
@@ -212,6 +219,12 @@ def:
                     ctx->set_text_bg_default(ctx);
                 }
             }
+            continue;
+        }
+
+        else if (ctx->esc_values[i] == 23
+              || ctx->esc_values[i] == 24
+              || ctx->esc_values[i] == 28) {
             continue;
         }
 
