@@ -739,6 +739,8 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             ctx->set_cursor_pos(ctx, x, y);
             break;
         case 'P':
+            if (ctx->esc_values[0] > ctx->cols - x)
+                ctx->esc_values[0] = ctx->cols - x;
             for (size_t i = x + ctx->esc_values[0]; i < ctx->cols; i++)
                 ctx->move_character(ctx, i - ctx->esc_values[0], y, i, y);
             ctx->set_cursor_pos(ctx, ctx->cols - ctx->esc_values[0], y);
