@@ -759,17 +759,21 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                     break;
             }
             break;
-        case '@':
-            for (size_t i = ctx->cols - 1; ; i--) {
-                ctx->move_character(ctx, i + ctx->esc_values[0], y, i, y);
-                ctx->set_cursor_pos(ctx, i, y);
+        case '@': {
+            size_t n = ctx->esc_values[0];
+            if (n > ctx->cols - x) {
+                n = ctx->cols - x;
+            }
+            for (size_t i = ctx->cols - 1; i >= x + n; i--) {
+                ctx->move_character(ctx, i, y, i - n, y);
+            }
+            ctx->set_cursor_pos(ctx, x, y);
+            for (size_t i = 0; i < n; i++) {
                 ctx->raw_putchar(ctx, ' ');
-                if (i == x) {
-                    break;
-                }
             }
             ctx->set_cursor_pos(ctx, x, y);
             break;
+        }
         case 'P':
             if (ctx->esc_values[0] > ctx->cols - x)
                 ctx->esc_values[0] = ctx->cols - x;
