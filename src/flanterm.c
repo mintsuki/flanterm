@@ -1233,7 +1233,7 @@ static int bisearch(uint32_t ucs, const struct interval *table, int max) {
   return 0;
 }
 
-int mk_wcwidth(uint32_t ucs) {
+static int mk_wcwidth(uint32_t ucs) {
   /* sorted list of non-overlapping intervals of zero-width characters */
   /* Unicode 17.0.0 */
   static const struct interval combining[] = {
