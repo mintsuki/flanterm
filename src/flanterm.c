@@ -668,14 +668,21 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                 ctx->callback(ctx, FLANTERM_CB_PRIVATE_ID, 0, 0, 0);
             }
             break;
-        case 'd':
+        case 'd': {
             if (ctx->esc_values[0] != 0) {
                 ctx->esc_values[0]--;
             }
-            if (ctx->esc_values[0] >= ctx->rows)
-                ctx->esc_values[0] = ctx->rows - 1;
-            ctx->set_cursor_pos(ctx, x, ctx->esc_values[0]);
+            size_t max_row = ctx->rows;
+            size_t row_offset = 0;
+            if (ctx->origin_mode) {
+                max_row = ctx->scroll_bottom_margin - ctx->scroll_top_margin;
+                row_offset = ctx->scroll_top_margin;
+            }
+            if (ctx->esc_values[0] >= max_row)
+                ctx->esc_values[0] = max_row - 1;
+            ctx->set_cursor_pos(ctx, x, ctx->esc_values[0] + row_offset);
             break;
+        }
         case 'G':
         case '`':
             if (ctx->esc_values[0] != 0) {
