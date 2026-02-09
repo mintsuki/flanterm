@@ -813,7 +813,8 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             }
             size_t old_scroll_top_margin = ctx->scroll_top_margin;
             ctx->scroll_top_margin = y;
-            size_t count = ctx->esc_values[0] > ctx->rows ? ctx->rows : ctx->esc_values[0];
+            size_t max_count = ctx->scroll_bottom_margin - y;
+            size_t count = ctx->esc_values[0] > max_count ? max_count : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++) {
                 ctx->scroll(ctx);
             }
@@ -826,7 +827,8 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             }
             size_t old_scroll_top_margin = ctx->scroll_top_margin;
             ctx->scroll_top_margin = y;
-            size_t count = ctx->esc_values[0] > ctx->rows ? ctx->rows : ctx->esc_values[0];
+            size_t max_count = ctx->scroll_bottom_margin - y;
+            size_t count = ctx->esc_values[0] > max_count ? max_count : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++) {
                 ctx->revscroll(ctx);
             }
