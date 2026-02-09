@@ -670,7 +670,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
 
     size_t esc_default;
     switch (c) {
-        case 'J': case 'K': case 'q':
+        case 'J': case 'K': case 'q': case 'm': case 'c': case ']':
             esc_default = 0; break;
         default:
             esc_default = 1; break;
@@ -678,6 +678,14 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
 
     for (size_t i = ctx->esc_values_i; i < FLANTERM_MAX_ESC_VALUES; i++) {
         ctx->esc_values[i] = esc_default;
+    }
+
+    if (esc_default != 0) {
+        for (size_t i = 0; i < ctx->esc_values_i; i++) {
+            if (ctx->esc_values[i] == 0) {
+                ctx->esc_values[i] = esc_default;
+            }
+        }
     }
 
     if (ctx->dec_private == true) {
