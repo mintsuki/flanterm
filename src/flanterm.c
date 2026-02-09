@@ -1539,8 +1539,31 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
 
         ctx->unicode_remaining--;
         ctx->code_point |= (uint64_t)(c & 0x3f) << (6 * ctx->unicode_remaining);
+
+        // Reject overlong encodings and out-of-range codepoints early
+        // by validating the first continuation byte against the lead byte.
+        // 3-byte lead E0: first continuation must be >= 0xA0 (code_point >= 0x800)
+        // 4-byte lead F0: first continuation must be >= 0x90 (code_point >= 0x10000)
+        // 4-byte lead F4: first continuation must be <= 0x8F (code_point <= 0x10FFFF)
+        if (ctx->unicode_remaining == 1 && ctx->code_point < 0x800) {
+            ctx->unicode_remaining = 0;
+            goto unicode_error;
+        }
+        if (ctx->unicode_remaining == 2 && ctx->code_point < 0x10000) {
+            ctx->unicode_remaining = 0;
+            goto unicode_error;
+        }
+        if (ctx->unicode_remaining == 2 && ctx->code_point > 0x10ffff) {
+            ctx->unicode_remaining = 0;
+            goto unicode_error;
+        }
+
         if (ctx->unicode_remaining != 0) {
             return;
+        }
+
+        if (ctx->code_point >= 0xd800 && ctx->code_point <= 0xdfff) {
+            goto unicode_error;
         }
 
         int cc = unicode_to_cp437(ctx->code_point);
