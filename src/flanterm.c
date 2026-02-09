@@ -88,6 +88,7 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->cursor_enabled = true;
     ctx->scroll_enabled = true;
     ctx->wrap_enabled = true;
+    ctx->origin_mode = false;
     ctx->control_sequence = false;
     ctx->escape = false;
     ctx->osc = false;
@@ -447,6 +448,11 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
     }
 
     switch (ctx->esc_values[0]) {
+        case 6: {
+            ctx->origin_mode = set;
+            ctx->set_cursor_pos(ctx, 0, set ? ctx->scroll_top_margin : 0);
+            return;
+        }
         case 7: {
             ctx->wrap_enabled = set;
             return;
@@ -673,19 +679,28 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             ctx->set_cursor_pos(ctx, ctx->esc_values[0], y);
             break;
         case 'H':
-        case 'f':
+        case 'f': {
             if (ctx->esc_values[0] != 0) {
                 ctx->esc_values[0]--;
             }
             if (ctx->esc_values[1] != 0) {
                 ctx->esc_values[1]--;
             }
-            if (ctx->esc_values[1] >= ctx->cols)
+            size_t max_row = ctx->rows;
+            size_t row_offset = 0;
+            if (ctx->origin_mode) {
+                max_row = ctx->scroll_bottom_margin - ctx->scroll_top_margin;
+                row_offset = ctx->scroll_top_margin;
+            }
+            if (ctx->esc_values[1] >= ctx->cols) {
                 ctx->esc_values[1] = ctx->cols - 1;
-            if (ctx->esc_values[0] >= ctx->rows)
-                ctx->esc_values[0] = ctx->rows - 1;
-            ctx->set_cursor_pos(ctx, ctx->esc_values[1], ctx->esc_values[0]);
+            }
+            if (ctx->esc_values[0] >= max_row) {
+                ctx->esc_values[0] = max_row - 1;
+            }
+            ctx->set_cursor_pos(ctx, ctx->esc_values[1], ctx->esc_values[0] + row_offset);
             break;
+        }
         case 'M': {
             if (y < ctx->scroll_top_margin || y >= ctx->scroll_bottom_margin) {
                 break;
