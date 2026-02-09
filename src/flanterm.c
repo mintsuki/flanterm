@@ -763,7 +763,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                     break;
                 case 6:
                     if (ctx->callback != NULL) {
-                        ctx->callback(ctx, FLANTERM_CB_POS_REPORT, x + 1, y + 1, 0);
+                        size_t report_y = ctx->origin_mode && y >= ctx->scroll_top_margin
+                            ? y - ctx->scroll_top_margin : y;
+                        ctx->callback(ctx, FLANTERM_CB_POS_REPORT, x + 1, report_y + 1, 0);
                     }
                     break;
             }
