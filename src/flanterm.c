@@ -1028,7 +1028,7 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
             if (y == ctx->scroll_top_margin) {
                 ctx->revscroll(ctx);
                 ctx->set_cursor_pos(ctx, x, y);
-            } else {
+            } else if (y > 0) {
                 ctx->set_cursor_pos(ctx, x, y - 1);
             }
             break;
