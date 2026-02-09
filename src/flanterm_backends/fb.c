@@ -732,11 +732,10 @@ static void push_to_queue(struct flanterm_context *_ctx, struct flanterm_fb_char
 static void flanterm_fb_revscroll(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
-    for (size_t i = (_ctx->scroll_bottom_margin - 1) * _ctx->cols - 1;
-         i >= _ctx->scroll_top_margin * _ctx->cols; i--) {
-        if (i == (size_t)-1) {
-            break;
-        }
+    size_t start = _ctx->scroll_top_margin * _ctx->cols;
+    size_t end = (_ctx->scroll_bottom_margin - 1) * _ctx->cols;
+    for (size_t i = end; i > start; ) {
+        i--;
         struct flanterm_fb_char *c;
         struct flanterm_fb_queue_item *q = ctx->map[i];
         if (q != NULL) {
