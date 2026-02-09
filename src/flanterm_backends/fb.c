@@ -803,14 +803,14 @@ static void flanterm_fb_set_cursor_pos(struct flanterm_context *_ctx, size_t x, 
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (x >= _ctx->cols) {
-        if ((int)x < 0) {
+        if (x > SIZE_MAX / 2) {
             x = 0;
         } else {
             x = _ctx->cols - 1;
         }
     }
     if (y >= _ctx->rows) {
-        if ((int)y < 0) {
+        if (y > SIZE_MAX / 2) {
             y = 0;
         } else {
             y = _ctx->rows - 1;
