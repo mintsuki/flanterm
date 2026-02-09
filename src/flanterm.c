@@ -1044,6 +1044,7 @@ static void restore_state(struct flanterm_context *ctx) {
     ctx->bg_bold = ctx->saved_state_bg_bold;
     ctx->reverse_video = ctx->saved_state_reverse_video;
     ctx->origin_mode = ctx->saved_state_origin_mode;
+    ctx->wrap_enabled = ctx->saved_state_wrap_enabled;
     ctx->current_charset = ctx->saved_state_current_charset;
     ctx->charsets[0] = ctx->saved_state_charsets[0];
     ctx->charsets[1] = ctx->saved_state_charsets[1];
@@ -1060,6 +1061,7 @@ static void save_state(struct flanterm_context *ctx) {
     ctx->saved_state_bg_bold = ctx->bg_bold;
     ctx->saved_state_reverse_video = ctx->reverse_video;
     ctx->saved_state_origin_mode = ctx->origin_mode;
+    ctx->saved_state_wrap_enabled = ctx->wrap_enabled;
     ctx->saved_state_current_charset = ctx->current_charset;
     ctx->saved_state_charsets[0] = ctx->charsets[0];
     ctx->saved_state_charsets[1] = ctx->charsets[1];
