@@ -919,6 +919,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             linux_private_parse(ctx);
             break;
         default:
+            if (c >= 0x40 && c <= 0x7E) {
+                break;
+            }
             ctx->scroll_enabled = r;
             ctx->csi_unhandled = true;
             return;
