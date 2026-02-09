@@ -116,7 +116,6 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->last_was_graphic = false;
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
-    ctx->oob_output = FLANTERM_OOB_OUTPUT_ONLCR;
 }
 
 static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c);
@@ -1657,9 +1656,9 @@ unicode_error:
         case '\n':
             if (y == ctx->scroll_bottom_margin - 1) {
                 ctx->scroll(ctx);
-                ctx->set_cursor_pos(ctx, (ctx->oob_output & FLANTERM_OOB_OUTPUT_ONLCR) ? 0 : x, y);
+                ctx->set_cursor_pos(ctx, x, y);
             } else {
-                ctx->set_cursor_pos(ctx, (ctx->oob_output & FLANTERM_OOB_OUTPUT_ONLCR) ? 0 : x, y + 1);
+                ctx->set_cursor_pos(ctx, x, y + 1);
             }
             return;
         case '\b':
@@ -1739,10 +1738,3 @@ void flanterm_set_callback(struct flanterm_context *ctx, void (*callback)(struct
     ctx->callback = callback;
 }
 
-uint64_t flanterm_get_oob_output(struct flanterm_context *ctx) {
-    return ctx->oob_output;
-}
-
-void flanterm_set_oob_output(struct flanterm_context *ctx, uint64_t oob_output) {
-    ctx->oob_output = oob_output;
-}
