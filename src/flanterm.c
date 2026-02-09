@@ -627,15 +627,10 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         case 'A': {
             if (ctx->esc_values[0] > y)
                 ctx->esc_values[0] = y;
-            size_t orig_y = y;
             size_t dest_y = y - ctx->esc_values[0];
-            bool will_be_in_scroll_region = false;
-            if ((ctx->scroll_top_margin >= dest_y && ctx->scroll_top_margin <= orig_y)
-             || (ctx->scroll_bottom_margin >= dest_y && ctx->scroll_bottom_margin <= orig_y)) {
-                will_be_in_scroll_region = true;
-            }
-            if (will_be_in_scroll_region && dest_y < ctx->scroll_top_margin) {
-                dest_y = ctx->scroll_top_margin;
+            size_t min_y = ctx->origin_mode ? ctx->scroll_top_margin : 0;
+            if (dest_y < min_y) {
+                dest_y = min_y;
             }
             ctx->set_cursor_pos(ctx, x, dest_y);
             break;
@@ -647,15 +642,10 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         case 'B': {
             if (y + ctx->esc_values[0] > ctx->rows - 1)
                 ctx->esc_values[0] = (ctx->rows - 1) - y;
-            size_t orig_y = y;
             size_t dest_y = y + ctx->esc_values[0];
-            bool will_be_in_scroll_region = false;
-            if ((ctx->scroll_top_margin >= orig_y && ctx->scroll_top_margin <= dest_y)
-             || (ctx->scroll_bottom_margin >= orig_y && ctx->scroll_bottom_margin <= dest_y)) {
-                will_be_in_scroll_region = true;
-            }
-            if (will_be_in_scroll_region && dest_y >= ctx->scroll_bottom_margin) {
-                dest_y = ctx->scroll_bottom_margin - 1;
+            size_t max_y = ctx->origin_mode ? ctx->scroll_bottom_margin : ctx->rows;
+            if (dest_y >= max_y) {
+                dest_y = max_y - 1;
             }
             ctx->set_cursor_pos(ctx, x, dest_y);
             break;
