@@ -971,15 +971,19 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
 static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
-    if (ctx->cursor_x >= _ctx->cols && (ctx->cursor_y < _ctx->scroll_bottom_margin - 1 || _ctx->scroll_enabled)) {
-        ctx->cursor_x = 0;
-        ctx->cursor_y++;
-        if (ctx->cursor_y == _ctx->scroll_bottom_margin) {
-            ctx->cursor_y--;
-            flanterm_fb_scroll(_ctx);
-        }
-        if (ctx->cursor_y >= _ctx->rows) {
-            ctx->cursor_y = _ctx->rows - 1;
+    if (ctx->cursor_x >= _ctx->cols) {
+        if (_ctx->wrap_enabled && (ctx->cursor_y < _ctx->scroll_bottom_margin - 1 || _ctx->scroll_enabled)) {
+            ctx->cursor_x = 0;
+            ctx->cursor_y++;
+            if (ctx->cursor_y == _ctx->scroll_bottom_margin) {
+                ctx->cursor_y--;
+                flanterm_fb_scroll(_ctx);
+            }
+            if (ctx->cursor_y >= _ctx->rows) {
+                ctx->cursor_y = _ctx->rows - 1;
+            }
+        } else {
+            ctx->cursor_x = _ctx->cols - 1;
         }
     }
 

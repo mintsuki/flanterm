@@ -87,6 +87,7 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->autoflush = true;
     ctx->cursor_enabled = true;
     ctx->scroll_enabled = true;
+    ctx->wrap_enabled = true;
     ctx->control_sequence = false;
     ctx->escape = false;
     ctx->osc = false;
@@ -446,12 +447,12 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
     }
 
     switch (ctx->esc_values[0]) {
+        case 7: {
+            ctx->wrap_enabled = set;
+            return;
+        }
         case 25: {
-            if (set) {
-                ctx->cursor_enabled = true;
-            } else {
-                ctx->cursor_enabled = false;
-            }
+            ctx->cursor_enabled = set;
             return;
         }
     }

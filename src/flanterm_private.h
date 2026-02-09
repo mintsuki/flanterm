@@ -49,6 +49,7 @@ struct flanterm_context {
     bool autoflush;
     bool cursor_enabled;
     bool scroll_enabled;
+    bool wrap_enabled;
     bool control_sequence;
     bool escape;
     bool osc;
