@@ -862,6 +862,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                     // Erase from cursor to end: clear rest of current line,
                     // then clear full lines below, using explicit cursor
                     // positioning to avoid scroll region wrapping limits.
+                    ctx->set_cursor_pos(ctx, x, y);
                     for (size_t xc = x; xc < ctx->cols; xc++) {
                         ctx->raw_putchar(ctx, ' ');
                     }
@@ -921,6 +922,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         case 'X': {
             size_t cx, cy;
             ctx->get_cursor_pos(ctx, &cx, &cy);
+            ctx->set_cursor_pos(ctx, cx, cy);
             size_t remaining = ctx->cols - cx;
             size_t count = ctx->esc_values[0] > remaining ? remaining : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++)
@@ -940,6 +942,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         case 'K':
             switch (ctx->esc_values[0]) {
                 case 0: {
+                    ctx->set_cursor_pos(ctx, x, y);
                     for (size_t i = x; i < ctx->cols; i++)
                         ctx->raw_putchar(ctx, ' ');
                     ctx->set_cursor_pos(ctx, x, y);
