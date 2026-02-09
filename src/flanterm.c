@@ -1008,6 +1008,9 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
     ctx->get_cursor_pos(ctx, &x, &y);
 
     switch (c) {
+        case 0x1b:
+            ctx->escape_offset = 0;
+            return;
         case ']':
             ctx->osc_escape = false;
             ctx->osc = true;
