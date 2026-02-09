@@ -480,6 +480,12 @@ static void flanterm_fb_swap_palette(struct flanterm_context *_ctx) {
     uint32_t tmp = ctx->text_bg;
     ctx->text_bg = ctx->text_fg;
     ctx->text_fg = tmp;
+    if (ctx->text_fg == 0xffffffff) {
+        ctx->text_fg = ctx->default_bg;
+    }
+    if (ctx->text_bg == ctx->default_bg) {
+        ctx->text_bg = 0xffffffff;
+    }
 }
 
 static void plot_char_scaled_canvas(struct flanterm_context *_ctx, struct flanterm_fb_char *c, size_t x, size_t y) {
