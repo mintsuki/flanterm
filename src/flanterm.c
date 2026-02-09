@@ -577,6 +577,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             return;
         }
         ctx->rrr = true;
+        if (ctx->esc_values[ctx->esc_values_i] > UINT32_MAX / 10) {
+            return;
+        }
         ctx->esc_values[ctx->esc_values_i] *= 10;
         ctx->esc_values[ctx->esc_values_i] += c - '0';
         return;
