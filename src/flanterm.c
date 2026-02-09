@@ -504,12 +504,19 @@ static void mode_toggle(struct flanterm_context *ctx, uint8_t c) {
     }
 }
 
+static void osc_finalize(struct flanterm_context *ctx) {
+    if (ctx->callback != NULL) {
+        ctx->callback(ctx, FLANTERM_CB_OSC, ctx->osc_buf_i, (uintptr_t)ctx->osc_buf, 0);
+    }
+}
+
 static bool osc_parse(struct flanterm_context *ctx, uint8_t c) {
     // ESC \ terminates an OSC sequence cleanly
     // but if ESC is followed by non-\, report failure from osc_parse and
     // try parsing the character as another escape code
     if (ctx->osc_escape) {
         if (c == '\\') {
+            osc_finalize(ctx);
             ctx->osc = false;
             ctx->osc_escape = false;
             ctx->escape = false;
@@ -525,13 +532,17 @@ static bool osc_parse(struct flanterm_context *ctx, uint8_t c) {
         case 0x1b:
             ctx->osc_escape = true;
             break;
-        // BEL is the other terminator 
+        // BEL is the other terminator
         case '\a':
+            osc_finalize(ctx);
             ctx->osc_escape = false;
             ctx->osc = false;
             ctx->escape = false;
             break;
         default:
+            if (ctx->osc_buf_i < sizeof(ctx->osc_buf)) {
+                ctx->osc_buf[ctx->osc_buf_i++] = c;
+            }
             break;
     }
     return true;
@@ -971,6 +982,7 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
         case ']':
             ctx->osc_escape = false;
             ctx->osc = true;
+            ctx->osc_buf_i = 0;
             return;
         case '[':
             for (size_t i = 0; i < FLANTERM_MAX_ESC_VALUES; i++)
