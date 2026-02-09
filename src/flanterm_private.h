@@ -82,6 +82,7 @@ struct flanterm_context {
     bool saved_state_bg_bold;
     bool saved_state_reverse_video;
     size_t saved_state_current_charset;
+    uint8_t saved_state_charsets[2];
     size_t saved_state_current_primary;
     size_t saved_state_current_bg;
 
