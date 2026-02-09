@@ -551,7 +551,7 @@ static void plot_char_scaled_uncanvas(struct flanterm_context *_ctx, struct flan
     uint32_t default_bg = ctx->default_bg;
 
     uint32_t bg = c->bg == 0xffffffff ? default_bg : c->bg;
-    uint32_t fg = c->fg == 0xffffffff ? default_bg : c->fg;
+    uint32_t fg = c->fg == 0xffffffff ? ctx->default_fg : c->fg;
 
     x = ctx->offset_x + x * ctx->glyph_width;
     y = ctx->offset_y + y * ctx->glyph_height;
@@ -665,7 +665,7 @@ static void plot_char_unscaled_uncanvas(struct flanterm_context *_ctx, struct fl
     uint32_t default_bg = ctx->default_bg;
 
     uint32_t bg = c->bg == 0xffffffff ? default_bg : c->bg;
-    uint32_t fg = c->fg == 0xffffffff ? default_bg : c->fg;
+    uint32_t fg = c->fg == 0xffffffff ? ctx->default_fg : c->fg;
 
     x = ctx->offset_x + x * ctx->glyph_width;
     y = ctx->offset_y + y * ctx->glyph_height;
