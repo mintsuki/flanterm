@@ -384,9 +384,9 @@ set_bg_bright:
 
                     uint32_t rgb_value = 0;
 
-                    rgb_value |= ctx->esc_values[i + 1] << 16;
-                    rgb_value |= ctx->esc_values[i + 2] << 8;
-                    rgb_value |= ctx->esc_values[i + 3];
+                    rgb_value |= (ctx->esc_values[i + 1] & 0xff) << 16;
+                    rgb_value |= (ctx->esc_values[i + 2] & 0xff) << 8;
+                    rgb_value |= (ctx->esc_values[i + 3] & 0xff);
 
                     i += 3;
 
