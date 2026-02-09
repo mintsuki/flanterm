@@ -1278,6 +1278,7 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x263b: return 2;
         case 0x2665: return 3;
         case 0x2666: return 4;
+        case 0x25c6: return 4;
         case 0x2663: return 5;
         case 0x2660: return 6;
         case 0x2022: return 7;
@@ -1289,8 +1290,11 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x266a: return 13;
         case 0x266b: return 14;
         case 0x263c: return 15;
+        case 0x00a4: return 15;
         case 0x25ba: return 16;
+        case 0x25b6: return 16;
         case 0x25c4: return 17;
+        case 0x25c0: return 17;
         case 0x2195: return 18;
         case 0x203c: return 19;
         case 0x00b6: return 20;
@@ -1305,6 +1309,40 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x2194: return 29;
         case 0x25b2: return 30;
         case 0x25bc: return 31;
+
+        case 0x00a8: return 0x22;
+        case 0x00b4: return 0x27;
+        case 0x00b8: return 0x2c;
+        case 0x00ad: return 0x2d;
+        case 0x00c0: return 0x41;
+        case 0x00c1: return 0x41;
+        case 0x00c2: return 0x41;
+        case 0x00c3: return 0x41;
+        case 0x00a9: return 0x43;
+        case 0x00d0: return 0x44;
+        case 0x00c8: return 0x45;
+        case 0x00ca: return 0x45;
+        case 0x00cb: return 0x45;
+        case 0x00cc: return 0x49;
+        case 0x00cd: return 0x49;
+        case 0x00ce: return 0x49;
+        case 0x00cf: return 0x49;
+        case 0x212a: return 0x4b;
+        case 0x00d2: return 0x4f;
+        case 0x00d3: return 0x4f;
+        case 0x00d4: return 0x4f;
+        case 0x00d5: return 0x4f;
+        case 0x00ae: return 0x52;
+        case 0x00d9: return 0x55;
+        case 0x00da: return 0x55;
+        case 0x00db: return 0x55;
+        case 0x00dd: return 0x59;
+        case 0x23bd: return 0x5f;
+        case 0x00e3: return 0x61;
+        case 0x00f5: return 0x6f;
+        case 0x00d7: return 0x78;
+        case 0x00fd: return 0x79;
+        case 0x00a6: return 0x7c;
 
         case 0x2302: return 127;
         case 0x00c7: return 128;
@@ -1323,6 +1361,7 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x00ec: return 141;
         case 0x00c4: return 142;
         case 0x00c5: return 143;
+        case 0x212b: return 143;
         case 0x00c9: return 144;
         case 0x00e6: return 145;
         case 0x00c6: return 146;
@@ -1405,19 +1444,26 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x2580: return 223;
         case 0x03b1: return 224;
         case 0x00df: return 225;
+        case 0x03b2: return 225;
         case 0x0393: return 226;
         case 0x03c0: return 227;
         case 0x03a3: return 228;
         case 0x03c3: return 229;
         case 0x00b5: return 230;
+        case 0x03bc: return 230;
         case 0x03c4: return 231;
         case 0x03a6: return 232;
+        case 0x00d8: return 232;
         case 0x0398: return 233;
         case 0x03a9: return 234;
+        case 0x2126: return 234;
         case 0x03b4: return 235;
+        case 0x00f0: return 235;
         case 0x221e: return 236;
         case 0x03c6: return 237;
+        case 0x00f8: return 237;
         case 0x03b5: return 238;
+        case 0x2208: return 238;
         case 0x2229: return 239;
         case 0x2261: return 240;
         case 0x00b1: return 241;
@@ -1434,6 +1480,8 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x207f: return 252;
         case 0x00b2: return 253;
         case 0x25a0: return 254;
+        case 0xfffd: return 254;
+        case 0x00a0: return 255;
     }
 
     return -1;
