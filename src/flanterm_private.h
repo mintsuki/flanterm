@@ -75,7 +75,9 @@ struct flanterm_context {
     size_t scroll_top_margin;
     size_t scroll_bottom_margin;
     uint32_t esc_values[FLANTERM_MAX_ESC_VALUES];
+    uint8_t last_printed_char;
     uint64_t oob_output;
+    bool last_was_graphic;
     bool saved_state_bold;
     bool saved_state_bg_bold;
     bool saved_state_reverse_video;

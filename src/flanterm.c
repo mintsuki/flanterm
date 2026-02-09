@@ -110,6 +110,8 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->saved_cursor_y = 0;
     ctx->current_primary = (size_t)-1;
     ctx->current_bg = (size_t)-1;
+    ctx->last_printed_char = ' ';
+    ctx->last_was_graphic = false;
     ctx->scroll_top_margin = 0;
     ctx->scroll_bottom_margin = ctx->rows;
     ctx->oob_output = FLANTERM_OOB_OUTPUT_ONLCR;
@@ -841,6 +843,40 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         case 'h':
             mode_toggle(ctx, c);
             break;
+        case 'S': {
+            size_t region = ctx->scroll_bottom_margin - ctx->scroll_top_margin;
+            size_t count = ctx->esc_values[0] > region ? region : ctx->esc_values[0];
+            for (size_t i = 0; i < count; i++) {
+                ctx->scroll(ctx);
+            }
+            break;
+        }
+        case 'T': {
+            size_t region = ctx->scroll_bottom_margin - ctx->scroll_top_margin;
+            size_t count = ctx->esc_values[0] > region ? region : ctx->esc_values[0];
+            for (size_t i = 0; i < count; i++) {
+                ctx->revscroll(ctx);
+            }
+            break;
+        }
+        case 'b': {
+            if (!ctx->last_was_graphic) {
+                break;
+            }
+            ctx->scroll_enabled = r;
+            size_t count = ctx->esc_values[0] > 65535 ? 65535 : ctx->esc_values[0];
+            for (size_t i = 0; i < count; i++) {
+                if (ctx->insert_mode == true) {
+                    size_t ix, iy;
+                    ctx->get_cursor_pos(ctx, &ix, &iy);
+                    for (size_t j = ctx->cols - 1; j > ix; j--) {
+                        ctx->move_character(ctx, j, iy, j - 1, iy);
+                    }
+                }
+                ctx->raw_putchar(ctx, ctx->last_printed_char);
+            }
+            break;
+        }
         case ']':
             linux_private_parse(ctx);
             break;
@@ -962,7 +998,7 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
 }
 
 static bool dec_special_print(struct flanterm_context *ctx, uint8_t c) {
-#define FLANTERM_DEC_SPCL_PRN(C) ctx->raw_putchar(ctx, (C)); return true;
+#define FLANTERM_DEC_SPCL_PRN(C) ctx->last_printed_char = (C); ctx->last_was_graphic = true; ctx->raw_putchar(ctx, (C)); return true;
     switch (c) {
         case '`': FLANTERM_DEC_SPCL_PRN(0x04)
         case '0': FLANTERM_DEC_SPCL_PRN(0xdb)
@@ -1287,6 +1323,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         ctx->osc = false;
         ctx->osc_escape = false;
         ctx->g_select = 0;
+        ctx->last_was_graphic = false;
         return;
     }
 
@@ -1307,12 +1344,16 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         if (cc == -1) {
             int replacement_width = mk_wcwidth(ctx->code_point);
             if (replacement_width > 0) {
+                ctx->last_printed_char = 0xfe;
+                ctx->last_was_graphic = true;
                 ctx->raw_putchar(ctx, 0xfe);
             }
             for (int i = 1; i < replacement_width; i++) {
                 ctx->raw_putchar(ctx, ' ');
             }
         } else {
+            ctx->last_printed_char = cc;
+            ctx->last_was_graphic = true;
             ctx->raw_putchar(ctx, cc);
         }
         return;
@@ -1348,6 +1389,10 @@ unicode_error:
         }
         ctx->g_select = 0;
         return;
+    }
+
+    if ((c <= 0x1f && c != 0x1b) || c == 0x7f) {
+        ctx->last_was_graphic = false;
     }
 
     size_t x, y;
@@ -1421,8 +1466,12 @@ unicode_error:
     }
 
     if (c >= 0x20 && c <= 0x7e) {
+        ctx->last_printed_char = c;
+        ctx->last_was_graphic = true;
         ctx->raw_putchar(ctx, c);
     } else {
+        ctx->last_printed_char = 0xfe;
+        ctx->last_was_graphic = true;
         ctx->raw_putchar(ctx, 0xfe);
     }
 }
