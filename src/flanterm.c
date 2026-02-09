@@ -960,6 +960,8 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
         if (osc_parse(ctx, c)) {
             return;
         }
+        // OSC aborted by ESC + non-backslash; reset offset for new sequence
+        ctx->escape_offset = 1;
     }
 
     if (ctx->control_sequence == true) {
