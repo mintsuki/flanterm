@@ -686,6 +686,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             ctx->set_cursor_pos(ctx, ctx->esc_values[1], ctx->esc_values[0]);
             break;
         case 'M': {
+            if (y < ctx->scroll_top_margin || y >= ctx->scroll_bottom_margin) {
+                break;
+            }
             size_t old_scroll_top_margin = ctx->scroll_top_margin;
             ctx->scroll_top_margin = y;
             size_t count = ctx->esc_values[0] > ctx->rows ? ctx->rows : ctx->esc_values[0];
@@ -696,6 +699,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             break;
         }
         case 'L': {
+            if (y < ctx->scroll_top_margin || y >= ctx->scroll_bottom_margin) {
+                break;
+            }
             size_t old_scroll_top_margin = ctx->scroll_top_margin;
             ctx->scroll_top_margin = y;
             size_t count = ctx->esc_values[0] > ctx->rows ? ctx->rows : ctx->esc_values[0];
