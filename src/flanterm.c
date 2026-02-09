@@ -475,6 +475,24 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
             ctx->cursor_enabled = set;
             return;
         }
+        case 1049: {
+            if (set) {
+                ctx->clear(ctx, true);
+            } else {
+                if (ctx->reverse_video) {
+                    ctx->reverse_video = false;
+                    ctx->swap_palette(ctx);
+                }
+                ctx->bold = false;
+                ctx->bg_bold = false;
+                ctx->current_primary = (size_t)-1;
+                ctx->current_bg = (size_t)-1;
+                ctx->set_text_bg_default(ctx);
+                ctx->set_text_fg_default(ctx);
+                ctx->clear(ctx, true);
+            }
+            return;
+        }
     }
 
     if (ctx->callback != NULL) {
