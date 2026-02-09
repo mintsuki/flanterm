@@ -978,8 +978,8 @@ static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
             ctx->cursor_y--;
             flanterm_fb_scroll(_ctx);
         }
-        if (ctx->cursor_y >= _ctx->cols) {
-            ctx->cursor_y = _ctx->cols - 1;
+        if (ctx->cursor_y >= _ctx->rows) {
+            ctx->cursor_y = _ctx->rows - 1;
         }
     }
 
