@@ -964,7 +964,7 @@ static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
     ctx->queue_i = 0;
 
     if (ctx->flush_callback) {
-        ctx->flush_callback(ctx->framebuffer, ctx->pitch * ctx->height);
+        ctx->flush_callback(ctx->framebuffer, ctx->pitch * ctx->phys_height);
     }
 }
 
@@ -1034,7 +1034,7 @@ static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
     }
 
     if (ctx->flush_callback) {
-        ctx->flush_callback(ctx->framebuffer, ctx->pitch * ctx->height);
+        ctx->flush_callback(ctx->framebuffer, ctx->pitch * ctx->phys_height);
     }
 }
 
@@ -1080,6 +1080,8 @@ struct flanterm_context *flanterm_fb_init(
     size_t margin,
     int rotation
 ) {
+    size_t phys_height = height;
+
     if (rotation == FLANTERM_FB_ROTATE_90 || rotation == FLANTERM_FB_ROTATE_270) {
         size_t tmp = width;
         width = height;
@@ -1205,6 +1207,7 @@ struct flanterm_context *flanterm_fb_init(
     ctx->framebuffer = (void *)framebuffer;
     ctx->width = width;
     ctx->height = height;
+    ctx->phys_height = phys_height;
     ctx->pitch = pitch;
 
 #define FONT_BYTES ((font_width * font_height * FLANTERM_FB_FONT_GLYPHS) / 8)
