@@ -752,30 +752,35 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         case 'J':
             switch (ctx->esc_values[0]) {
                 case 0: {
-                    size_t rows_remaining = ctx->rows - (y + 1);
-                    size_t cols_diff = ctx->cols - (x + 1);
-                    size_t to_clear = rows_remaining * ctx->cols + cols_diff + 1;
-                    for (size_t i = 0; i < to_clear; i++) {
+                    // Erase from cursor to end: clear rest of current line,
+                    // then clear full lines below, using explicit cursor
+                    // positioning to avoid scroll region wrapping limits.
+                    for (size_t xc = x; xc < ctx->cols; xc++) {
                         ctx->raw_putchar(ctx, ' ');
+                    }
+                    for (size_t yc = y + 1; yc < ctx->rows; yc++) {
+                        ctx->set_cursor_pos(ctx, 0, yc);
+                        for (size_t xc = 0; xc < ctx->cols; xc++) {
+                            ctx->raw_putchar(ctx, ' ');
+                        }
                     }
                     ctx->set_cursor_pos(ctx, x, y);
                     break;
                 }
                 case 1: {
-                    ctx->set_cursor_pos(ctx, 0, 0);
-                    bool b = false;
-                    for (size_t yc = 0; yc < ctx->rows; yc++) {
+                    // Erase from start to cursor: clear full lines above,
+                    // then clear current line up to and including cursor.
+                    for (size_t yc = 0; yc < y; yc++) {
+                        ctx->set_cursor_pos(ctx, 0, yc);
                         for (size_t xc = 0; xc < ctx->cols; xc++) {
                             ctx->raw_putchar(ctx, ' ');
-                            if (xc == x && yc == y) {
-                                ctx->set_cursor_pos(ctx, x, y);
-                                b = true;
-                                break;
-                            }
                         }
-                        if (b == true)
-                            break;
                     }
+                    ctx->set_cursor_pos(ctx, 0, y);
+                    for (size_t xc = 0; xc <= x; xc++) {
+                        ctx->raw_putchar(ctx, ' ');
+                    }
+                    ctx->set_cursor_pos(ctx, x, y);
                     break;
                 }
                 case 2:
