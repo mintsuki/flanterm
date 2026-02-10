@@ -540,7 +540,17 @@ static void mode_toggle(struct flanterm_context *ctx, uint8_t c) {
 
 static void osc_finalize(struct flanterm_context *ctx) {
     if (ctx->callback != NULL) {
-        ctx->callback(ctx, FLANTERM_CB_OSC, ctx->osc_buf_i, (uintptr_t)ctx->osc_buf, 0);
+        // Parse the leading OSC number and skip past the semicolon.
+        uint64_t osc_num = 0;
+        size_t i = 0;
+        while (i < ctx->osc_buf_i && ctx->osc_buf[i] >= '0' && ctx->osc_buf[i] <= '9') {
+            osc_num = osc_num * 10 + (ctx->osc_buf[i] - '0');
+            i++;
+        }
+        if (i < ctx->osc_buf_i && ctx->osc_buf[i] == ';') {
+            i++;
+        }
+        ctx->callback(ctx, FLANTERM_CB_OSC, osc_num, ctx->osc_buf_i - i, (uintptr_t)&ctx->osc_buf[i]);
     }
 }
 
