@@ -1431,6 +1431,39 @@ static int mk_wcwidth(uint32_t ucs) {
 // End of https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c inherited code
 
 static int unicode_to_cp437(uint64_t code_point) {
+    // Braille patterns U+2800-U+28FF: approximate using CP437 block/shade characters.
+    // Braille dot layout (bit positions):
+    //   bit0  bit3   (row 0)
+    //   bit1  bit4   (row 1)
+    //   bit2  bit5   (row 2)
+    //   bit6  bit7   (row 3)
+    if (code_point >= 0x2800 && code_point <= 0x28ff) {
+        uint32_t dots = (uint32_t)(code_point - 0x2800);
+
+        if (dots == 0) return 0x20;
+        if (dots == 0xff) return 0xdb;
+
+        bool has_top = dots & 0x1b;
+        bool has_bottom = dots & 0xe4;
+        bool has_left = dots & 0x47;
+        bool has_right = dots & 0xb8;
+
+        if (has_top && !has_bottom) return 0xdf; // ▀
+        if (has_bottom && !has_top) return 0xdc; // ▄
+        if (has_left && !has_right) return 0xdd; // ▌
+        if (has_right && !has_left) return 0xde; // ▐
+
+        // Count set bits for density-based shade
+        uint32_t n = dots - ((dots >> 1) & 0x55);
+        n = (n & 0x33) + ((n >> 2) & 0x33);
+        n = (n + (n >> 4)) & 0x0f;
+
+        if (n <= 2) return 0xb0; // ░
+        if (n <= 4) return 0xb1; // ▒
+        if (n <= 6) return 0xb2; // ▓
+        return 0xdb;             // █
+    }
+
     switch (code_point) {
         case 0x263a: return 1;
         case 0x263b: return 2;
@@ -1640,6 +1673,228 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x25a0: return 254;
         case 0xfffd: return 254;
         case 0x00a0: return 255;
+
+        // Approximate mappings for Unicode characters without exact CP437 equivalents
+
+        // Rounded/arc box drawing corners
+        case 0x256d: return 0xda; // ╭ → ┌
+        case 0x256e: return 0xbf; // ╮ → ┐
+        case 0x256f: return 0xd9; // ╯ → ┘
+        case 0x2570: return 0xc0; // ╰ → └
+
+        // Diagonal box drawing
+        case 0x2571: return 0x2f; // ╱ → /
+        case 0x2572: return 0x5c; // ╲ → \ (backslash)
+        case 0x2573: return 0x58; // ╳ → X
+
+        // Heavy box drawing → single-line equivalents
+        case 0x2501: return 0xc4; // ━ → ─
+        case 0x2503: return 0xb3; // ┃ → │
+        case 0x250f: return 0xda; // ┏ → ┌
+        case 0x2513: return 0xbf; // ┓ → ┐
+        case 0x2517: return 0xc0; // ┗ → └
+        case 0x251b: return 0xd9; // ┛ → ┘
+        case 0x2523: return 0xc3; // ┣ → ├
+        case 0x252b: return 0xb4; // ┫ → ┤
+        case 0x2533: return 0xc2; // ┳ → ┬
+        case 0x253b: return 0xc1; // ┻ → ┴
+        case 0x254b: return 0xc5; // ╋ → ┼
+
+        // Mixed heavy/light box drawing corners
+        case 0x250d: return 0xda; // ┍ → ┌
+        case 0x250e: return 0xda; // ┎ → ┌
+        case 0x2511: return 0xbf; // ┑ → ┐
+        case 0x2512: return 0xbf; // ┒ → ┐
+        case 0x2515: return 0xc0; // ┕ → └
+        case 0x2516: return 0xc0; // ┖ → └
+        case 0x2519: return 0xd9; // ┙ → ┘
+        case 0x251a: return 0xd9; // ┚ → ┘
+
+        // Mixed heavy/light box drawing T-pieces
+        case 0x251d: return 0xc3; // ┝ → ├
+        case 0x251e: return 0xc3; // ┞ → ├
+        case 0x251f: return 0xc3; // ┟ → ├
+        case 0x2520: return 0xc3; // ┠ → ├
+        case 0x2521: return 0xc3; // ┡ → ├
+        case 0x2522: return 0xc3; // ┢ → ├
+        case 0x2525: return 0xb4; // ┥ → ┤
+        case 0x2526: return 0xb4; // ┦ → ┤
+        case 0x2527: return 0xb4; // ┧ → ┤
+        case 0x2528: return 0xb4; // ┨ → ┤
+        case 0x2529: return 0xb4; // ┩ → ┤
+        case 0x252a: return 0xb4; // ┪ → ┤
+        case 0x252d: return 0xc2; // ┭ → ┬
+        case 0x252e: return 0xc2; // ┮ → ┬
+        case 0x252f: return 0xc2; // ┯ → ┬
+        case 0x2530: return 0xc2; // ┰ → ┬
+        case 0x2531: return 0xc2; // ┱ → ┬
+        case 0x2532: return 0xc2; // ┲ → ┬
+        case 0x2535: return 0xc1; // ┵ → ┴
+        case 0x2536: return 0xc1; // ┶ → ┴
+        case 0x2537: return 0xc1; // ┷ → ┴
+        case 0x2538: return 0xc1; // ┸ → ┴
+        case 0x2539: return 0xc1; // ┹ → ┴
+        case 0x253a: return 0xc1; // ┺ → ┴
+
+        // Mixed heavy/light box drawing crosses
+        case 0x253d: return 0xc5; // ┽ → ┼
+        case 0x253e: return 0xc5; // ┾ → ┼
+        case 0x253f: return 0xc5; // ┿ → ┼
+        case 0x2540: return 0xc5; // ╀ → ┼
+        case 0x2541: return 0xc5; // ╁ → ┼
+        case 0x2542: return 0xc5; // ╂ → ┼
+        case 0x2543: return 0xc5; // ╃ → ┼
+        case 0x2544: return 0xc5; // ╄ → ┼
+        case 0x2545: return 0xc5; // ╅ → ┼
+        case 0x2546: return 0xc5; // ╆ → ┼
+        case 0x2547: return 0xc5; // ╇ → ┼
+        case 0x2548: return 0xc5; // ╈ → ┼
+        case 0x2549: return 0xc5; // ╉ → ┼
+        case 0x254a: return 0xc5; // ╊ → ┼
+
+        // Dashed/dotted box drawing → solid equivalents
+        case 0x2504: return 0xc4; // ┄ → ─
+        case 0x2505: return 0xc4; // ┅ → ─
+        case 0x2506: return 0xb3; // ┆ → │
+        case 0x2507: return 0xb3; // ┇ → │
+        case 0x2508: return 0xc4; // ┈ → ─
+        case 0x2509: return 0xc4; // ┉ → ─
+        case 0x250a: return 0xb3; // ┊ → │
+        case 0x250b: return 0xb3; // ┋ → │
+
+        // Box drawing half-lines and fragments
+        case 0x2574: return 0xc4; // ╴ → ─
+        case 0x2575: return 0xb3; // ╵ → │
+        case 0x2576: return 0xc4; // ╶ → ─
+        case 0x2577: return 0xb3; // ╷ → │
+        case 0x2578: return 0xc4; // ╸ → ─
+        case 0x2579: return 0xb3; // ╹ → │
+        case 0x257a: return 0xc4; // ╺ → ─
+        case 0x257b: return 0xb3; // ╻ → │
+        case 0x257c: return 0xc4; // ╼ → ─
+        case 0x257d: return 0xb3; // ╽ → │
+        case 0x257e: return 0xc4; // ╾ → ─
+        case 0x257f: return 0xb3; // ╿ → │
+
+        // Triangle variants → filled equivalents
+        case 0x25b3: return 30;  // △ → ▲
+        case 0x25b5: return 30;  // ▵ → ▲
+        case 0x25b7: return 16;  // ▷ → ►
+        case 0x25b9: return 16;  // ▹ → ►
+        case 0x25bd: return 31;  // ▽ → ▼
+        case 0x25bf: return 31;  // ▿ → ▼
+        case 0x25c1: return 17;  // ◁ → ◄
+        case 0x25c3: return 17;  // ◃ → ◄
+
+        // Fractional block elements → closest CP437 block
+        case 0x2581: return 0xdc; // ▁ (lower 1/8) → ▄
+        case 0x2582: return 0xdc; // ▂ (lower 1/4) → ▄
+        case 0x2583: return 0xdc; // ▃ (lower 3/8) → ▄
+        case 0x2585: return 0xdc; // ▅ (lower 5/8) → ▄
+        case 0x2586: return 0xdb; // ▆ (lower 3/4) → █
+        case 0x2587: return 0xdb; // ▇ (lower 7/8) → █
+        case 0x2589: return 0xdb; // ▉ (left 7/8) → █
+        case 0x258a: return 0xdb; // ▊ (left 3/4) → █
+        case 0x258b: return 0xdd; // ▋ (left 5/8) → ▌
+        case 0x258d: return 0xdd; // ▍ (left 3/8) → ▌
+        case 0x258e: return 0xdd; // ▎ (left 1/4) → ▌
+        case 0x258f: return 0xdd; // ▏ (left 1/8) → ▌
+        case 0x2594: return 0xdf; // ▔ (upper 1/8) → ▀
+        case 0x2595: return 0xde; // ▕ (right 1/8) → ▐
+
+        // Quadrant block elements
+        case 0x2596: return 0xdc; // ▖ → ▄
+        case 0x2597: return 0xdc; // ▗ → ▄
+        case 0x2598: return 0xdf; // ▘ → ▀
+        case 0x2599: return 0xdb; // ▙ → █
+        case 0x259a: return 0xb1; // ▚ → ▒
+        case 0x259b: return 0xdb; // ▛ → █
+        case 0x259c: return 0xdb; // ▜ → █
+        case 0x259d: return 0xdf; // ▝ → ▀
+        case 0x259e: return 0xb1; // ▞ → ▒
+        case 0x259f: return 0xdb; // ▟ → █
+
+        // Circles and bullets
+        case 0x25cf: return 0x07; // ● → •
+        case 0x25c9: return 0x0a; // ◉ → ◙
+        case 0x25ef: return 0x09; // ◯ → ○
+        case 0x25e6: return 0x09; // ◦ → ○
+        case 0x25aa: return 0xfe; // ▪ → ■
+        case 0x25fc: return 0xfe; // ◼ → ■
+
+        // Typographic punctuation
+        case 0x2013: return 0x2d; // – (en dash) → -
+        case 0x2014: return 0x2d; // — (em dash) → -
+        case 0x2018: return 0x27; // ' (left single quote) → '
+        case 0x2019: return 0x27; // ' (right single quote) → '
+        case 0x201c: return 0x22; // " (left double quote) → "
+        case 0x201d: return 0x22; // " (right double quote) → "
+        case 0x2026: return 0xfa; // … (ellipsis) → ·
+        case 0x2212: return 0x2d; // − (minus sign) → -
+
+        // Check marks
+        case 0x2713: return 0xfb; // ✓ → √
+        case 0x2714: return 0xfb; // ✔ → √
+
+        // Double arrows → single arrow equivalents
+        case 0x21d0: return 27;  // ⇐ → ←
+        case 0x21d1: return 24;  // ⇑ → ↑
+        case 0x21d2: return 26;  // ⇒ → →
+        case 0x21d3: return 25;  // ⇓ → ↓
+        case 0x21d4: return 29;  // ⇔ → ↔
+        case 0x21d5: return 18;  // ⇕ → ↕
+
+        // Summation sign
+        case 0x2211: return 0xe4; // ∑ → Σ
+
+        // Horizontal line extension
+        case 0x23af: return 0xc4; // ⎯ → ─
+
+        // Media transport symbols
+        case 0x23f4: return 17;   // ⏴ → ◄
+        case 0x23f5: return 16;   // ⏵ → ►
+        case 0x23f6: return 30;   // ⏶ → ▲
+        case 0x23f7: return 31;   // ⏷ → ▼
+        case 0x23f8: return 0xba; // ⏸ → ║
+        case 0x23f9: return 0xfe; // ⏹ → ■
+        case 0x23fa: return 0x07; // ⏺ → •
+
+        // Square bracket pieces
+        case 0x23a1: return 0xda; // ⎡ → ┌
+        case 0x23a2: return 0xb3; // ⎢ → │
+        case 0x23a3: return 0xc0; // ⎣ → └
+        case 0x23a4: return 0xbf; // ⎤ → ┐
+        case 0x23a5: return 0xb3; // ⎥ → │
+        case 0x23a6: return 0xd9; // ⎦ → ┘
+
+        // Curly bracket pieces
+        case 0x23a7: return 0xda; // ⎧ → ┌
+        case 0x23a8: return 0xc3; // ⎨ → ├
+        case 0x23a9: return 0xc0; // ⎩ → └
+        case 0x23aa: return 0xb3; // ⎪ → │
+        case 0x23ab: return 0xbf; // ⎫ → ┐
+        case 0x23ac: return 0xb4; // ⎬ → ┤
+        case 0x23ad: return 0xd9; // ⎭ → ┘
+        case 0x23ae: return 0xb3; // ⎮ → │
+
+        // Vertical box lines
+        case 0x23b8: return 0xb3; // ⎸ → │
+        case 0x23b9: return 0xb3; // ⎹ → │
+
+        // Horizontal scan lines (0x23bd already mapped above)
+        case 0x23ba: return 0xc4; // ⎺ → ─
+        case 0x23bb: return 0xc4; // ⎻ → ─
+        case 0x23bc: return 0xc4; // ⎼ → ─
+
+        // Dentistry/angle symbols
+        case 0x23be: return 0xb3; // ⎾ → │
+        case 0x23bf: return 0xc0; // ⎿ → └
+
+        // Corner brackets
+        case 0x231c: return 0xda; // ⌜ → ┌
+        case 0x231d: return 0xbf; // ⌝ → ┐
+        case 0x231e: return 0xc0; // ⌞ → └
+        case 0x231f: return 0xd9; // ⌟ → ┘
     }
 
     return -1;
