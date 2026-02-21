@@ -24,6 +24,7 @@ struct flanterm_context *ft_ctx = flanterm_fb_init(
         NULL, NULL,
         NULL, 0, 0, 1,
         0, 0,
+        0,
         0
     );
 ```
