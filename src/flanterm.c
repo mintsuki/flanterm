@@ -592,6 +592,54 @@ static bool osc_parse(struct flanterm_context *ctx, uint8_t c) {
     return true;
 }
 
+static bool execute_c0(struct flanterm_context *ctx, uint8_t c) {
+    size_t x, y;
+    switch (c) {
+        case '\a':
+            if (ctx->callback != NULL) {
+                ctx->callback(ctx, FLANTERM_CB_BELL, 0, 0, 0);
+            }
+            return true;
+        case '\b':
+            ctx->get_cursor_pos(ctx, &x, &y);
+            if (x > 0) {
+                ctx->set_cursor_pos(ctx, x - 1, y);
+            }
+            return true;
+        case '\t':
+            ctx->get_cursor_pos(ctx, &x, &y);
+            x = (x / ctx->tab_size + 1) * ctx->tab_size;
+            if (x >= ctx->cols) {
+                x = ctx->cols - 1;
+            }
+            ctx->set_cursor_pos(ctx, x, y);
+            return true;
+        case 0x0b:
+        case 0x0c:
+        case '\n':
+            ctx->get_cursor_pos(ctx, &x, &y);
+            if (y == ctx->scroll_bottom_margin - 1) {
+                ctx->scroll(ctx);
+                ctx->set_cursor_pos(ctx, x, y);
+            } else {
+                ctx->set_cursor_pos(ctx, x, y + 1);
+            }
+            return true;
+        case '\r':
+            ctx->get_cursor_pos(ctx, &x, &y);
+            ctx->set_cursor_pos(ctx, 0, y);
+            return true;
+        case 14:
+            ctx->current_charset = 1;
+            return true;
+        case 15:
+            ctx->current_charset = 0;
+            return true;
+        default:
+            return false;
+    }
+}
+
 static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->escape_offset == 2) {
         switch (c) {
@@ -604,54 +652,8 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         }
     }
 
-    // C0 control characters are executed immediately within CSI sequences
-    // (except ESC which is handled later, and CAN/SUB which are handled by the caller)
     if (c < 0x20 && c != 0x1b) {
-        size_t x, y;
-        switch (c) {
-            case '\a':
-                if (ctx->callback != NULL) {
-                    ctx->callback(ctx, FLANTERM_CB_BELL, 0, 0, 0);
-                }
-                break;
-            case '\b':
-                ctx->get_cursor_pos(ctx, &x, &y);
-                if (x > 0) {
-                    ctx->set_cursor_pos(ctx, x - 1, y);
-                }
-                break;
-            case '\t':
-                ctx->get_cursor_pos(ctx, &x, &y);
-                x = (x / ctx->tab_size + 1) * ctx->tab_size;
-                if (x >= ctx->cols) {
-                    x = ctx->cols - 1;
-                }
-                ctx->set_cursor_pos(ctx, x, y);
-                break;
-            case 0x0b:
-            case 0x0c:
-            case '\n':
-                ctx->get_cursor_pos(ctx, &x, &y);
-                if (y == ctx->scroll_bottom_margin - 1) {
-                    ctx->scroll(ctx);
-                    ctx->set_cursor_pos(ctx, x, y);
-                } else {
-                    ctx->set_cursor_pos(ctx, x, y + 1);
-                }
-                break;
-            case '\r':
-                ctx->get_cursor_pos(ctx, &x, &y);
-                ctx->set_cursor_pos(ctx, 0, y);
-                break;
-            case 14:
-                ctx->current_charset = 1;
-                break;
-            case 15:
-                ctx->current_charset = 0;
-                break;
-            default:
-                break;
-        }
+        execute_c0(ctx, c);
         return;
     }
 
@@ -2020,9 +2022,6 @@ unicode_error:
         ctx->last_was_graphic = false;
     }
 
-    size_t x, y;
-    ctx->get_cursor_pos(ctx, &x, &y);
-
     switch (c) {
         case 0x00:
         case 0x7f:
@@ -2031,48 +2030,14 @@ unicode_error:
             ctx->escape_offset = 0;
             ctx->escape = true;
             return;
-        case '\t': {
-            size_t next_tab = (x / ctx->tab_size + 1) * ctx->tab_size;
-            if (next_tab >= ctx->cols) {
-                ctx->set_cursor_pos(ctx, ctx->cols - 1, y);
-                return;
-            }
-            ctx->set_cursor_pos(ctx, next_tab, y);
-            return;
-        }
-        case 0x0b:
-        case 0x0c:
-        case '\n':
-            if (y == ctx->scroll_bottom_margin - 1) {
-                ctx->scroll(ctx);
-                ctx->set_cursor_pos(ctx, x, y);
-            } else {
-                ctx->set_cursor_pos(ctx, x, y + 1);
-            }
-            return;
-        case '\b':
-            if (x > 0) {
-                ctx->set_cursor_pos(ctx, x - 1, y);
-            }
-            return;
-        case '\r':
-            ctx->set_cursor_pos(ctx, 0, y);
-            return;
-        case '\a':
-            // The bell is handled by the kernel
-            if (ctx->callback != NULL) {
-                ctx->callback(ctx, FLANTERM_CB_BELL, 0, 0, 0);
-            }
-            return;
-        case 14:
-            // Move to G1 set
-            ctx->current_charset = 1;
-            return;
-        case 15:
-            // Move to G0 set
-            ctx->current_charset = 0;
-            return;
     }
+
+    if (c < 0x20 && execute_c0(ctx, c)) {
+        return;
+    }
+
+    size_t x, y;
+    ctx->get_cursor_pos(ctx, &x, &y);
 
     if (ctx->insert_mode == true) {
         for (size_t i = ctx->cols - 1; i > x; i--) {
