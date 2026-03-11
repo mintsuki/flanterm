@@ -448,13 +448,13 @@ static ALWAYS_INLINE uint32_t convert_colour(struct flanterm_context *_ctx, uint
     uint32_t b =  colour & 0xff;
     uint32_t ret = (r << ctx->red_mask_shift) | (g << ctx->green_mask_shift) | (b << ctx->blue_mask_shift);
     if (ctx->red_mask_size > 8) {
-        ret |= (r >> (16 - ctx->red_mask_size)) << (ctx->red_mask_shift + 8);
+        ret |= (r >> (16 - ctx->red_mask_size)) << (ctx->red_mask_shift - ctx->red_mask_size + 8);
     }
     if (ctx->green_mask_size > 8) {
-        ret |= (g >> (16 - ctx->green_mask_size)) << (ctx->green_mask_shift + 8);
+        ret |= (g >> (16 - ctx->green_mask_size)) << (ctx->green_mask_shift - ctx->green_mask_size + 8);
     }
     if (ctx->blue_mask_size > 8) {
-        ret |= (b >> (16 - ctx->blue_mask_size)) << (ctx->blue_mask_shift + 8);
+        ret |= (b >> (16 - ctx->blue_mask_size)) << (ctx->blue_mask_shift - ctx->blue_mask_size + 8);
     }
     return ret;
 }
