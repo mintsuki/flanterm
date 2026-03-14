@@ -2038,7 +2038,8 @@ unicode_error:
             return;
     }
 
-    if (c < 0x20 && execute_c0(ctx, c)) {
+    if (c < 0x20) {
+        execute_c0(ctx, c);
         return;
     }
 
