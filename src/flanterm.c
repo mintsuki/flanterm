@@ -1147,6 +1147,7 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
             ctx->set_text_bg_default(ctx);
             ctx->set_text_fg_default(ctx);
             ctx->clear(ctx, true);
+            save_state(ctx);
             break;
         case 'D':
             if (y == ctx->scroll_bottom_margin - 1) {
