@@ -1922,12 +1922,15 @@ static int unicode_to_cp437(uint64_t code_point) {
     return -1;
 }
 
-static void insert_shift(struct flanterm_context *ctx) {
-    if (ctx->insert_mode) {
+static void insert_shift(struct flanterm_context *ctx, size_t count) {
+    if (ctx->insert_mode && count > 0) {
         size_t x, y;
         ctx->get_cursor_pos(ctx, &x, &y);
-        for (size_t i = ctx->cols - 1; i > x; i--) {
-            ctx->move_character(ctx, i, y, i - 1, y);
+        if (count > ctx->cols - x) {
+            count = ctx->cols - x;
+        }
+        for (size_t i = ctx->cols - 1; i >= x + count; i--) {
+            ctx->move_character(ctx, i, y, i - count, y);
         }
     }
 }
@@ -1948,7 +1951,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     if (ctx->unicode_remaining != 0) {
         if ((c & 0xc0) != 0x80) {
             ctx->unicode_remaining = 0;
-            insert_shift(ctx);
+            insert_shift(ctx, 1);
             ctx->raw_putchar(ctx, 0xfe);
             goto unicode_error;
         }
@@ -1987,7 +1990,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         if (cc == -1) {
             int replacement_width = mk_wcwidth(ctx->code_point);
             if (replacement_width > 0) {
-                insert_shift(ctx);
+                insert_shift(ctx, replacement_width);
                 ctx->last_printed_char = 0xfe;
                 ctx->last_was_graphic = true;
                 ctx->raw_putchar(ctx, 0xfe);
@@ -1996,7 +1999,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
                 ctx->raw_putchar(ctx, ' ');
             }
         } else {
-            insert_shift(ctx);
+            insert_shift(ctx, 1);
             ctx->last_printed_char = cc;
             ctx->last_was_graphic = true;
             ctx->raw_putchar(ctx, cc);
@@ -2060,7 +2063,7 @@ unicode_error:
         return;
     }
 
-    insert_shift(ctx);
+    insert_shift(ctx, 1);
 
     // Translate character set
     switch (ctx->charsets[ctx->current_charset]) {
