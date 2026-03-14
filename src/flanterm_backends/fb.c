@@ -1399,6 +1399,7 @@ fail:
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
     if (_malloc == bump_alloc) {
         bump_alloc_ptr = 0;
+        bump_alloc_base_offset_added = false;
         return NULL;
     }
 #endif
