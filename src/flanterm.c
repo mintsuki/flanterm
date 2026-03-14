@@ -616,7 +616,7 @@ static bool execute_c0(struct flanterm_context *ctx, uint8_t c) {
             if (y == ctx->scroll_bottom_margin - 1) {
                 ctx->scroll(ctx);
                 ctx->set_cursor_pos(ctx, x, y);
-            } else {
+            } else if (y < ctx->rows - 1) {
                 ctx->set_cursor_pos(ctx, x, y + 1);
             }
             return true;
