@@ -444,6 +444,9 @@ set_bg_bright:
 out:;
 }
 
+static void save_state(struct flanterm_context *ctx);
+static void restore_state(struct flanterm_context *ctx);
+
 static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
     ctx->dec_private = false;
 
@@ -476,19 +479,11 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
                 break;
             case 1049:
                 if (set) {
+                    save_state(ctx);
                     ctx->clear(ctx, true);
                 } else {
-                    if (ctx->reverse_video) {
-                        ctx->reverse_video = false;
-                        ctx->swap_palette(ctx);
-                    }
-                    ctx->bold = false;
-                    ctx->bg_bold = false;
-                    ctx->current_primary = (size_t)-1;
-                    ctx->current_bg = (size_t)-1;
-                    ctx->set_text_bg_default(ctx);
-                    ctx->set_text_fg_default(ctx);
                     ctx->clear(ctx, true);
+                    restore_state(ctx);
                 }
                 break;
         }
