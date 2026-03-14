@@ -721,6 +721,8 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
 
     bool r = ctx->scroll_enabled;
     ctx->scroll_enabled = false;
+    bool saved_wrap = ctx->wrap_enabled;
+    ctx->wrap_enabled = true;
     size_t x, y;
     ctx->get_cursor_pos(ctx, &x, &y);
 
@@ -728,6 +730,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
         // ESC aborts the current CSI and starts a new escape sequence
         case 0x1B:
             ctx->scroll_enabled = r;
+            ctx->wrap_enabled = saved_wrap;
             ctx->control_sequence = false;
             ctx->escape_offset = 0;
             return;
@@ -1025,6 +1028,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                 break;
             }
             ctx->scroll_enabled = r;
+            ctx->wrap_enabled = saved_wrap;
             size_t count = ctx->esc_values[0] > 65535 ? 65535 : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++) {
                 if (ctx->insert_mode == true) {
@@ -1046,11 +1050,13 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
                 break;
             }
             ctx->scroll_enabled = r;
+            ctx->wrap_enabled = saved_wrap;
             ctx->csi_unhandled = true;
             return;
     }
 
     ctx->scroll_enabled = r;
+    ctx->wrap_enabled = saved_wrap;
 
 cleanup:
     ctx->control_sequence = false;
