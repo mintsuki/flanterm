@@ -915,6 +915,9 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             break;
         case '@': {
             size_t n = ctx->esc_values[0];
+            if (n == 0) {
+                break;
+            }
             if (n > ctx->cols - x) {
                 n = ctx->cols - x;
             }
