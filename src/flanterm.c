@@ -661,7 +661,12 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             return;
         }
         ctx->esc_values[ctx->esc_values_i] *= 10;
-        ctx->esc_values[ctx->esc_values_i] += c - '0';
+        uint32_t digit = c - '0';
+        if (ctx->esc_values[ctx->esc_values_i] > UINT32_MAX - digit) {
+            ctx->esc_values[ctx->esc_values_i] = UINT32_MAX;
+            return;
+        }
+        ctx->esc_values[ctx->esc_values_i] += digit;
         return;
     }
 
