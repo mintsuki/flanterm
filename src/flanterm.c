@@ -417,16 +417,16 @@ set_bg_bright:
 
                     if (col < 8) {
                         if (fg) {
-                            ctx->current_primary = col;
+                            ctx->current_primary = (size_t)-2;
                         } else {
-                            ctx->current_bg = col;
+                            ctx->current_bg = (size_t)-2;
                         }
                         (render_fg ? ctx->set_text_fg : ctx->set_text_bg)(ctx, col);
                     } else if (col < 16) {
                         if (fg) {
-                            ctx->current_primary = col - 8;
+                            ctx->current_primary = (size_t)-2;
                         } else {
-                            ctx->current_bg = col - 8;
+                            ctx->current_bg = (size_t)-2;
                         }
                         (render_fg ? ctx->set_text_fg_bright : ctx->set_text_bg_bright)(ctx, col - 8);
                     } else if (col < 256) {
