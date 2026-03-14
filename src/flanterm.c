@@ -112,6 +112,9 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->saved_cursor_y = 0;
     ctx->current_primary = (size_t)-1;
     ctx->current_bg = (size_t)-1;
+    ctx->saved_state_charsets[0] = CHARSET_DEFAULT;
+    ctx->saved_state_charsets[1] = CHARSET_DEC_SPECIAL;
+    ctx->saved_state_wrap_enabled = true;
     ctx->saved_state_current_primary = (size_t)-1;
     ctx->saved_state_current_bg = (size_t)-1;
     ctx->last_printed_char = ' ';
