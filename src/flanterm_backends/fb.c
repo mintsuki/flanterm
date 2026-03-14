@@ -1133,11 +1133,29 @@ struct flanterm_context *flanterm_fb_init(
             size_t width_limit = width > FLANTERM_FB_WIDTH_LIMIT ? FLANTERM_FB_WIDTH_LIMIT : width;
             size_t height_limit = height > FLANTERM_FB_HEIGHT_LIMIT ? FLANTERM_FB_HEIGHT_LIMIT : height;
 
-            framebuffer = (uint32_t *)((uintptr_t)framebuffer + ((((height / 2) - (height_limit / 2)) * pitch) + (((width / 2) - (width_limit / 2)) * 4)));
+            // width/height are logical (post-rotation) dimensions. For the
+            // centering offset, we need to map back to the physical layout.
+            // For ROTATE_0/180: logical height = physical rows (pitch stride),
+            //                   logical width = physical cols (4-byte stride).
+            // For ROTATE_90/270: logical height = physical cols (4-byte stride),
+            //                    logical width = physical rows (pitch stride).
+            if (rotation == FLANTERM_FB_ROTATE_90 || rotation == FLANTERM_FB_ROTATE_270) {
+                framebuffer = (uint32_t *)((uintptr_t)framebuffer + ((((height / 2) - (height_limit / 2)) * 4) + (((width / 2) - (width_limit / 2)) * pitch)));
+            } else {
+                framebuffer = (uint32_t *)((uintptr_t)framebuffer + ((((height / 2) - (height_limit / 2)) * pitch) + (((width / 2) - (width_limit / 2)) * 4)));
+            }
 
             width = width_limit;
             height = height_limit;
-            phys_height = height;
+
+            // phys_height must reflect the physical row count for flush_callback.
+            // For ROTATE_0/180, logical height = physical rows.
+            // For ROTATE_90/270, logical width = physical rows.
+            if (rotation == FLANTERM_FB_ROTATE_90 || rotation == FLANTERM_FB_ROTATE_270) {
+                phys_height = width;
+            } else {
+                phys_height = height;
+            }
         }
 
         // Force disable canvas
