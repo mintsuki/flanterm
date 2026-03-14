@@ -1137,6 +1137,7 @@ struct flanterm_context *flanterm_fb_init(
 
             width = width_limit;
             height = height_limit;
+            phys_height = height;
         }
 
         // Force disable canvas
