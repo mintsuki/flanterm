@@ -370,10 +370,7 @@ set_bg_bright:
         // 256/RGB
         else if (ctx->esc_values[i] == 38 || ctx->esc_values[i] == 48) {
             bool fg = ctx->esc_values[i] == 38;
-
-            if (ctx->reverse_video) {
-                fg = !fg;
-            }
+            bool render_fg = ctx->reverse_video ? !fg : fg;
 
             i++;
             if (i >= ctx->esc_values_i) {
@@ -400,7 +397,7 @@ set_bg_bright:
                         ctx->current_bg = (size_t)-2;
                     }
 
-                    (fg ? ctx->set_text_fg_rgb : ctx->set_text_bg_rgb)(ctx, rgb_value);
+                    (render_fg ? ctx->set_text_fg_rgb : ctx->set_text_bg_rgb)(ctx, rgb_value);
 
                     break;
                 }
@@ -419,14 +416,14 @@ set_bg_bright:
                         } else {
                             ctx->current_bg = col;
                         }
-                        (fg ? ctx->set_text_fg : ctx->set_text_bg)(ctx, col);
+                        (render_fg ? ctx->set_text_fg : ctx->set_text_bg)(ctx, col);
                     } else if (col < 16) {
                         if (fg) {
                             ctx->current_primary = col - 8;
                         } else {
                             ctx->current_bg = col - 8;
                         }
-                        (fg ? ctx->set_text_fg_bright : ctx->set_text_bg_bright)(ctx, col - 8);
+                        (render_fg ? ctx->set_text_fg_bright : ctx->set_text_bg_bright)(ctx, col - 8);
                     } else if (col < 256) {
                         if (fg) {
                             ctx->current_primary = (size_t)-2;
@@ -434,7 +431,7 @@ set_bg_bright:
                             ctx->current_bg = (size_t)-2;
                         }
                         uint32_t rgb_value = col256[col - 16];
-                        (fg ? ctx->set_text_fg_rgb : ctx->set_text_bg_rgb)(ctx, rgb_value);
+                        (render_fg ? ctx->set_text_fg_rgb : ctx->set_text_bg_rgb)(ctx, rgb_value);
                     }
 
                     break;
