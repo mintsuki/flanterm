@@ -1219,6 +1219,8 @@ struct flanterm_context *flanterm_fb_init(
 
     ctx->text_fg = ctx->default_fg;
     ctx->text_bg = 0xffffffff;
+    ctx->saved_state_text_fg = ctx->text_fg;
+    ctx->saved_state_text_bg = ctx->text_bg;
 
     ctx->rotation = rotation;
 
