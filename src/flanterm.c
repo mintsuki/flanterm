@@ -712,6 +712,12 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
     // CSI sequences are terminated by a byte in [0x40,0x7E]
     // so skip all bytes until the terminator byte
     if (ctx->csi_unhandled) {
+        if (c == 0x1B) {
+            ctx->csi_unhandled = false;
+            ctx->control_sequence = false;
+            ctx->escape_offset = 0;
+            return;
+        }
         if (c >= 0x40 && c <= 0x7E) {
             ctx->csi_unhandled = false;
             goto cleanup;
