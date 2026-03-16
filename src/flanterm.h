@@ -65,6 +65,75 @@ void flanterm_get_dimensions(struct flanterm_context *ctx, size_t *cols, size_t 
 void flanterm_set_autoflush(struct flanterm_context *ctx, bool state);
 void flanterm_set_callback(struct flanterm_context *ctx, void (*callback)(struct flanterm_context *, uint64_t, uint64_t, uint64_t, uint64_t));
 
+/**
+ * Get the current cursor position.
+ *
+ * The returned coordinates are zero-based.
+ *
+ * @param ctx Flanterm context to query.
+ * @param x Receives the cursor X position.
+ * @param y Receives the cursor Y position.
+ */
+void flanterm_get_cursor_pos(struct flanterm_context *ctx, size_t *x, size_t *y);
+
+/**
+ * Set the current cursor position.
+ *
+ * Coordinates are zero-based.
+ *
+ * @param ctx Flanterm context to update.
+ * @param x New cursor X position.
+ * @param y New cursor Y position.
+ */
+void flanterm_set_cursor_pos(struct flanterm_context *ctx, size_t x, size_t y);
+
+/**
+ * Set the current text foreground colour.
+ *
+ * The colour index uses the terminal's base 0-7 colour range. Brightness is
+ * controlled separately by the bright flag.
+ *
+ * @param ctx Flanterm context to update.
+ * @param colour Base foreground colour index.
+ * @param bright True for bright/intense output, false for normal intensity.
+ */
+void flanterm_set_text_fg(struct flanterm_context *ctx, size_t colour, bool bright);
+
+/**
+ * Set the current text background colour.
+ *
+ * The colour index uses the terminal's base 0-7 colour range. Brightness is
+ * controlled separately by the bright flag.
+ *
+ * @param ctx Flanterm context to update.
+ * @param colour Base background colour index.
+ * @param bright True for bright/intense output, false for normal intensity.
+ */
+void flanterm_set_text_bg(struct flanterm_context *ctx, size_t colour, bool bright);
+
+/**
+ * Reset the foreground colour to the current default.
+ *
+ * @param ctx Flanterm context to update.
+ */
+void flanterm_reset_text_fg(struct flanterm_context *ctx);
+
+/**
+ * Reset the background colour to the current default.
+ *
+ * @param ctx Flanterm context to update.
+ */
+void flanterm_reset_text_bg(struct flanterm_context *ctx);
+
+/**
+ * Clear the terminal contents.
+ *
+ * @param ctx Flanterm context to clear.
+ * @param move True to reposition the cursor as part of the clear.
+ */
+void flanterm_clear(struct flanterm_context *ctx, bool move);
+
+
 #ifdef __cplusplus
 }
 #endif
