@@ -1044,7 +1044,7 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
             }
             ctx->scroll_enabled = r;
             ctx->wrap_enabled = saved_wrap;
-            size_t count = ctx->esc_values[0] > 65535 ? 65535 : ctx->esc_values[0];
+            size_t count = ctx->esc_values[0] > ctx->cols ? ctx->cols : ctx->esc_values[0];
             for (size_t i = 0; i < count; i++) {
                 if (ctx->insert_mode == true) {
                     size_t ix, iy;
