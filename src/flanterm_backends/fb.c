@@ -55,6 +55,14 @@
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
 
+static bool mul_size_overflow(size_t a, size_t b, size_t *out) {
+    if (a != 0 && b > SIZE_MAX / a) {
+        return true;
+    }
+    *out = a * b;
+    return false;
+}
+
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
 
 #ifndef FLANTERM_FB_BUMP_ALLOC_POOL_SIZE
@@ -1254,7 +1262,9 @@ struct flanterm_context *flanterm_fb_init(
     if (font != NULL) {
         ctx->font_width = font_width;
         ctx->font_height = font_height;
-        ctx->font_bits_size = FONT_BYTES;
+        if (mul_size_overflow(font_height, (size_t)FLANTERM_FB_FONT_GLYPHS, &ctx->font_bits_size)) {
+            goto fail;
+        }
         ctx->font_bits = _malloc(ctx->font_bits_size);
         if (ctx->font_bits == NULL) {
             goto fail;
@@ -1274,9 +1284,16 @@ struct flanterm_context *flanterm_fb_init(
 
 #undef FONT_BYTES
 
+    if (font_spacing > SIZE_MAX - ctx->font_width) {
+        goto fail;
+    }
     ctx->font_width += font_spacing;
 
-    ctx->font_bool_size = FLANTERM_FB_FONT_GLYPHS * font_height * ctx->font_width * sizeof(bool);
+    if (mul_size_overflow((size_t)FLANTERM_FB_FONT_GLYPHS, font_height, &ctx->font_bool_size) ||
+        mul_size_overflow(ctx->font_bool_size, ctx->font_width, &ctx->font_bool_size) ||
+        mul_size_overflow(ctx->font_bool_size, sizeof(bool), &ctx->font_bool_size)) {
+        goto fail;
+    }
     ctx->font_bool = _malloc(ctx->font_bool_size);
     if (ctx->font_bool == NULL) {
         goto fail;
@@ -1323,7 +1340,10 @@ struct flanterm_context *flanterm_fb_init(
     ctx->offset_x = margin + ((ctx->width - margin * 2) % ctx->glyph_width) / 2;
     ctx->offset_y = margin + ((ctx->height - margin * 2) % ctx->glyph_height) / 2;
 
-    ctx->grid_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_char);
+    if (mul_size_overflow(_ctx->rows, _ctx->cols, &ctx->grid_size) ||
+        mul_size_overflow(ctx->grid_size, sizeof(struct flanterm_fb_char), &ctx->grid_size)) {
+        goto fail;
+    }
     ctx->grid = _malloc(ctx->grid_size);
     if (ctx->grid == NULL) {
         goto fail;
@@ -1334,7 +1354,10 @@ struct flanterm_context *flanterm_fb_init(
         ctx->grid[i].bg = ctx->text_bg;
     }
 
-    ctx->queue_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_queue_item);
+    if (mul_size_overflow(_ctx->rows, _ctx->cols, &ctx->queue_size) ||
+        mul_size_overflow(ctx->queue_size, sizeof(struct flanterm_fb_queue_item), &ctx->queue_size)) {
+        goto fail;
+    }
     ctx->queue = _malloc(ctx->queue_size);
     if (ctx->queue == NULL) {
         goto fail;
@@ -1342,7 +1365,10 @@ struct flanterm_context *flanterm_fb_init(
     ctx->queue_i = 0;
     memset(ctx->queue, 0, ctx->queue_size);
 
-    ctx->map_size = _ctx->rows * _ctx->cols * sizeof(struct flanterm_fb_queue_item *);
+    if (mul_size_overflow(_ctx->rows, _ctx->cols, &ctx->map_size) ||
+        mul_size_overflow(ctx->map_size, sizeof(struct flanterm_fb_queue_item *), &ctx->map_size)) {
+        goto fail;
+    }
     ctx->map = _malloc(ctx->map_size);
     if (ctx->map == NULL) {
         goto fail;
@@ -1350,7 +1376,10 @@ struct flanterm_context *flanterm_fb_init(
     memset(ctx->map, 0, ctx->map_size);
 
     if (canvas != NULL) {
-        ctx->canvas_size = ctx->width * ctx->height * sizeof(uint32_t);
+        if (mul_size_overflow(ctx->width, ctx->height, &ctx->canvas_size) ||
+            mul_size_overflow(ctx->canvas_size, sizeof(uint32_t), &ctx->canvas_size)) {
+            goto fail;
+        }
         ctx->canvas = _malloc(ctx->canvas_size);
         if (ctx->canvas == NULL) {
             goto fail;
