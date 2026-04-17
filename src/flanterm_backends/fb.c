@@ -1107,6 +1107,18 @@ struct flanterm_context *flanterm_fb_init(
 ) {
     size_t phys_height = height;
 
+    // The framebuffer is written a 32-bit word at a time, so the stride must be
+    // a whole number of pixels and cover at least one scanline worth of data.
+    {
+        size_t min_pitch;
+        if (pitch % sizeof(uint32_t) != 0) {
+            return NULL;
+        }
+        if (mul_size_overflow(width, sizeof(uint32_t), &min_pitch) || pitch < min_pitch) {
+            return NULL;
+        }
+    }
+
     if (rotation == FLANTERM_FB_ROTATE_90 || rotation == FLANTERM_FB_ROTATE_270) {
         size_t tmp = width;
         width = height;
