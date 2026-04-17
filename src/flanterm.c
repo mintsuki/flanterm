@@ -2140,6 +2140,10 @@ void flanterm_set_cursor_pos(struct flanterm_context *ctx, size_t x, size_t y) {
     }
 
     ctx->set_cursor_pos(ctx, x, y);
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_set_text_fg(struct flanterm_context *ctx, size_t colour, bool bright) {
@@ -2161,6 +2165,10 @@ void flanterm_set_text_fg(struct flanterm_context *ctx, size_t colour, bool brig
         } else {
             ctx->set_text_bg(ctx, colour);
         }
+    }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
     }
 }
 
@@ -2184,6 +2192,10 @@ void flanterm_set_text_bg(struct flanterm_context *ctx, size_t colour, bool brig
             ctx->set_text_fg(ctx, colour);
         }
     }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_reset_text_fg(struct flanterm_context *ctx) {
@@ -2201,6 +2213,10 @@ void flanterm_reset_text_fg(struct flanterm_context *ctx) {
         } else {
             ctx->set_text_bg_default_bright(ctx);
         }
+    }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
     }
 }
 
@@ -2220,9 +2236,17 @@ void flanterm_reset_text_bg(struct flanterm_context *ctx) {
             ctx->set_text_fg_default_bright(ctx);
         }
     }
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
 void flanterm_clear(struct flanterm_context *ctx, bool move) {
     ctx->clear(ctx, move);
+
+    if (ctx->autoflush) {
+        ctx->double_buffer_flush(ctx);
+    }
 }
 
