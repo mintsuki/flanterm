@@ -1351,11 +1351,25 @@ struct flanterm_context *flanterm_fb_init(
     ctx->font_scale_x = font_scale_x;
     ctx->font_scale_y = font_scale_y;
 
-    ctx->glyph_width = ctx->font_width * font_scale_x;
-    ctx->glyph_height = font_height * font_scale_y;
+    if (mul_size_overflow(ctx->font_width, font_scale_x, &ctx->glyph_width) ||
+        mul_size_overflow(font_height, font_scale_y, &ctx->glyph_height)) {
+        goto fail;
+    }
+
+    if (ctx->glyph_width == 0 || ctx->glyph_height == 0) {
+        goto fail;
+    }
+
+    if (margin > SIZE_MAX / 2 || margin * 2 >= ctx->width || margin * 2 >= ctx->height) {
+        goto fail;
+    }
 
     _ctx->cols = (ctx->width - margin * 2) / ctx->glyph_width;
     _ctx->rows = (ctx->height - margin * 2) / ctx->glyph_height;
+
+    if (_ctx->cols == 0 || _ctx->rows == 0) {
+        goto fail;
+    }
 
     ctx->offset_x = margin + ((ctx->width - margin * 2) % ctx->glyph_width) / 2;
     ctx->offset_y = margin + ((ctx->height - margin * 2) % ctx->glyph_height) / 2;
