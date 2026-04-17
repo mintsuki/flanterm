@@ -1964,31 +1964,39 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
 
     if (ctx->unicode_remaining != 0) {
         if ((c & 0xc0) != 0x80) {
+            bool already_errored = ctx->code_point > 0x10ffff;
             ctx->unicode_remaining = 0;
-            insert_shift(ctx, 1);
-            ctx->raw_putchar(ctx, 0xfe);
+            ctx->code_point = 0;
+            if (!already_errored) {
+                insert_shift(ctx, 1);
+                ctx->raw_putchar(ctx, 0xfe);
+            }
             goto unicode_error;
         }
 
         ctx->unicode_remaining--;
         ctx->code_point |= (uint64_t)(c & 0x3f) << (6 * ctx->unicode_remaining);
 
-        // Reject overlong encodings and out-of-range codepoints early
-        // by validating the first continuation byte against the lead byte.
+        // Drain remaining continuation bytes of a sequence already flagged bad.
+        if (ctx->code_point > 0x10ffff) {
+            return;
+        }
+
+        // Reject overlong encodings and out-of-range codepoints as soon as the
+        // partial codepoint proves the sequence invalid, emit one replacement,
+        // and drain the remaining continuation bytes silently.
         // 3-byte lead E0: first continuation must be >= 0xA0 (code_point >= 0x800)
         // 4-byte lead F0: first continuation must be >= 0x90 (code_point >= 0x10000)
         // 4-byte lead F4: first continuation must be <= 0x8F (code_point <= 0x10FFFF)
-        if (ctx->unicode_remaining == 1 && ctx->code_point < 0x800) {
-            ctx->unicode_remaining = 0;
-            goto unicode_error;
-        }
-        if (ctx->unicode_remaining == 2 && ctx->code_point < 0x10000) {
-            ctx->unicode_remaining = 0;
-            goto unicode_error;
-        }
-        if (ctx->unicode_remaining == 2 && ctx->code_point > 0x10ffff) {
-            ctx->unicode_remaining = 0;
-            goto unicode_error;
+        if ((ctx->unicode_remaining == 1 && ctx->code_point < 0x800) ||
+            (ctx->unicode_remaining == 2 && ctx->code_point < 0x10000) ||
+            (ctx->unicode_remaining == 2 && ctx->code_point > 0x10ffff)) {
+            insert_shift(ctx, 1);
+            ctx->last_printed_char = 0xfe;
+            ctx->last_was_graphic = true;
+            ctx->raw_putchar(ctx, 0xfe);
+            ctx->code_point = UINT64_MAX;
+            return;
         }
 
         if (ctx->unicode_remaining != 0) {
