@@ -2143,6 +2143,10 @@ void flanterm_set_cursor_pos(struct flanterm_context *ctx, size_t x, size_t y) {
 }
 
 void flanterm_set_text_fg(struct flanterm_context *ctx, size_t colour, bool bright) {
+    if (colour >= 8) {
+        return;
+    }
+
     ctx->current_primary = colour;
 
     if (bright) {
@@ -2161,6 +2165,10 @@ void flanterm_set_text_fg(struct flanterm_context *ctx, size_t colour, bool brig
 }
 
 void flanterm_set_text_bg(struct flanterm_context *ctx, size_t colour, bool bright) {
+    if (colour >= 8) {
+        return;
+    }
+
     ctx->current_bg = colour;
 
     if (bright) {
