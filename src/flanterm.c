@@ -2201,18 +2201,18 @@ void flanterm_set_text_bg(struct flanterm_context *ctx, size_t colour, bool brig
 void flanterm_reset_text_fg(struct flanterm_context *ctx) {
     ctx->current_primary = (size_t)-1;
 
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
+    }
+
     if (!ctx->bold) {
-        if (!ctx->reverse_video) {
-            ctx->set_text_fg_default(ctx);
-        } else {
-            ctx->set_text_bg_default(ctx);
-        }
+        ctx->set_text_fg_default(ctx);
     } else {
-        if (!ctx->reverse_video) {
-            ctx->set_text_fg_default_bright(ctx);
-        } else {
-            ctx->set_text_bg_default_bright(ctx);
-        }
+        ctx->set_text_fg_default_bright(ctx);
+    }
+
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
     }
 
     if (ctx->autoflush) {
@@ -2223,18 +2223,18 @@ void flanterm_reset_text_fg(struct flanterm_context *ctx) {
 void flanterm_reset_text_bg(struct flanterm_context *ctx) {
     ctx->current_bg = (size_t)-1;
 
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
+    }
+
     if (!ctx->bg_bold) {
-        if (!ctx->reverse_video) {
-            ctx->set_text_bg_default(ctx);
-        } else {
-            ctx->set_text_fg_default(ctx);
-        }
+        ctx->set_text_bg_default(ctx);
     } else {
-        if (!ctx->reverse_video) {
-            ctx->set_text_bg_default_bright(ctx);
-        } else {
-            ctx->set_text_fg_default_bright(ctx);
-        }
+        ctx->set_text_bg_default_bright(ctx);
+    }
+
+    if (ctx->reverse_video) {
+        ctx->swap_palette(ctx);
     }
 
     if (ctx->autoflush) {
