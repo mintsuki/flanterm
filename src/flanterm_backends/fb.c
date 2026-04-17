@@ -1142,6 +1142,14 @@ struct flanterm_context *flanterm_fb_init(
         return NULL;
     }
 
+    // A channel whose field extends past the 32-bit pixel word would make
+    // convert_colour invoke undefined behaviour (shift-count too large).
+    if (red_mask_shift + red_mask_size > 32
+     || green_mask_shift + green_mask_size > 32
+     || blue_mask_shift + blue_mask_size > 32) {
+        return NULL;
+    }
+
     if (_malloc == NULL) {
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
         if (bump_allocated_instance == true) {
