@@ -46,6 +46,8 @@ struct flanterm_fb_char {
     uint32_t c;
     uint32_t fg;
     uint32_t bg;
+    bool fg_default;
+    bool bg_default;
 };
 
 struct flanterm_fb_queue_item {
@@ -108,11 +110,15 @@ struct flanterm_fb_context {
 
     uint32_t text_fg;
     uint32_t text_bg;
+    bool text_fg_default;
+    bool text_bg_default;
     size_t cursor_x;
     size_t cursor_y;
 
     uint32_t saved_state_text_fg;
     uint32_t saved_state_text_bg;
+    bool saved_state_text_fg_default;
+    bool saved_state_text_bg_default;
     size_t saved_state_cursor_x;
     size_t saved_state_cursor_y;
 

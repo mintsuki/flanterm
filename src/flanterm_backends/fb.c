@@ -476,6 +476,8 @@ static void flanterm_fb_save_state(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
     ctx->saved_state_text_fg = ctx->text_fg;
     ctx->saved_state_text_bg = ctx->text_bg;
+    ctx->saved_state_text_fg_default = ctx->text_fg_default;
+    ctx->saved_state_text_bg_default = ctx->text_bg_default;
     ctx->saved_state_cursor_x = ctx->cursor_x;
     ctx->saved_state_cursor_y = ctx->cursor_y;
 }
@@ -484,6 +486,8 @@ static void flanterm_fb_restore_state(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
     ctx->text_fg = ctx->saved_state_text_fg;
     ctx->text_bg = ctx->saved_state_text_bg;
+    ctx->text_fg_default = ctx->saved_state_text_fg_default;
+    ctx->text_bg_default = ctx->saved_state_text_bg_default;
     ctx->cursor_x = ctx->saved_state_cursor_x;
     ctx->cursor_y = ctx->saved_state_cursor_y;
 }
@@ -493,6 +497,9 @@ static void flanterm_fb_swap_palette(struct flanterm_context *_ctx) {
     uint32_t tmp = ctx->text_bg;
     ctx->text_bg = ctx->text_fg;
     ctx->text_fg = tmp;
+    bool tmp_default = ctx->text_bg_default;
+    ctx->text_bg_default = ctx->text_fg_default;
+    ctx->text_fg_default = tmp_default;
 }
 
 static void plot_char_scaled_canvas(struct flanterm_context *_ctx, struct flanterm_fb_char *c, size_t x, size_t y) {
@@ -543,8 +550,8 @@ static void plot_char_scaled_canvas(struct flanterm_context *_ctx, struct flante
         for (size_t fx = 0; fx < ctx->font_width; fx++) {
             for (size_t i = 0; i < ctx->font_scale_x; i++) {
                 size_t gx = ctx->font_scale_x * fx + i;
-                uint32_t bg = c->bg == 0xffffffff ? canvas_line[gx] : c->bg;
-                uint32_t fg = c->fg == 0xffffffff ? canvas_line[gx] : c->fg;
+                uint32_t bg = c->bg_default ? canvas_line[gx] : c->bg;
+                uint32_t fg = c->fg_default ? canvas_line[gx] : c->fg;
                 *fb_line = *glyph_pointer ? fg : bg;
                 fb_line += inner_stride;
             }
@@ -563,8 +570,8 @@ static void plot_char_scaled_uncanvas(struct flanterm_context *_ctx, struct flan
 
     uint32_t default_bg = ctx->default_bg;
 
-    uint32_t bg = c->bg == 0xffffffff ? default_bg : c->bg;
-    uint32_t fg = c->fg == 0xffffffff ? default_bg : c->fg;
+    uint32_t bg = c->bg_default ? default_bg : c->bg;
+    uint32_t fg = c->fg_default ? default_bg : c->fg;
 
     x = ctx->offset_x + x * ctx->glyph_width;
     y = ctx->offset_y + y * ctx->glyph_height;
@@ -659,8 +666,8 @@ static void plot_char_unscaled_canvas(struct flanterm_context *_ctx, struct flan
         uint32_t *canvas_line = ctx->canvas + x + (y + gy) * ctx->width;
         bool *glyph_pointer = glyph + (gy * ctx->font_width);
         for (size_t fx = 0; fx < ctx->font_width; fx++) {
-            uint32_t bg = c->bg == 0xffffffff ? canvas_line[fx] : c->bg;
-            uint32_t fg = c->fg == 0xffffffff ? canvas_line[fx] : c->fg;
+            uint32_t bg = c->bg_default ? canvas_line[fx] : c->bg;
+            uint32_t fg = c->fg_default ? canvas_line[fx] : c->fg;
             *fb_line = *(glyph_pointer++) ? fg : bg;
             fb_line += inner_stride;
         }
@@ -677,8 +684,8 @@ static void plot_char_unscaled_uncanvas(struct flanterm_context *_ctx, struct fl
 
     uint32_t default_bg = ctx->default_bg;
 
-    uint32_t bg = c->bg == 0xffffffff ? default_bg : c->bg;
-    uint32_t fg = c->fg == 0xffffffff ? default_bg : c->fg;
+    uint32_t bg = c->bg_default ? default_bg : c->bg;
+    uint32_t fg = c->fg_default ? default_bg : c->fg;
 
     x = ctx->offset_x + x * ctx->glyph_width;
     y = ctx->offset_y + y * ctx->glyph_height;
@@ -725,7 +732,19 @@ static void plot_char_unscaled_uncanvas(struct flanterm_context *_ctx, struct fl
 }
 
 static inline bool compare_char(struct flanterm_fb_char *a, struct flanterm_fb_char *b) {
-    return !(a->c != b->c || a->bg != b->bg || a->fg != b->fg);
+    if (a->c != b->c) {
+        return false;
+    }
+    if (a->fg_default != b->fg_default || a->bg_default != b->bg_default) {
+        return false;
+    }
+    if (!a->fg_default && a->fg != b->fg) {
+        return false;
+    }
+    if (!a->bg_default && a->bg != b->bg) {
+        return false;
+    }
+    return true;
 }
 
 static void push_to_queue(struct flanterm_context *_ctx, struct flanterm_fb_char *c, size_t x, size_t y) {
@@ -777,6 +796,8 @@ static void flanterm_fb_revscroll(struct flanterm_context *_ctx) {
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
+    empty.fg_default = ctx->text_fg_default;
+    empty.bg_default = ctx->text_bg_default;
     for (size_t i = 0; i < _ctx->cols; i++) {
         push_to_queue(_ctx, &empty, i, _ctx->scroll_top_margin);
     }
@@ -802,6 +823,8 @@ static void flanterm_fb_scroll(struct flanterm_context *_ctx) {
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
+    empty.fg_default = ctx->text_fg_default;
+    empty.bg_default = ctx->text_bg_default;
     for (size_t i = 0; i < _ctx->cols; i++) {
         push_to_queue(_ctx, &empty, i, _ctx->scroll_bottom_margin - 1);
     }
@@ -814,6 +837,8 @@ static void flanterm_fb_clear(struct flanterm_context *_ctx, bool move) {
     empty.c  = ' ';
     empty.fg = ctx->text_fg;
     empty.bg = ctx->text_bg;
+    empty.fg_default = ctx->text_fg_default;
+    empty.bg_default = ctx->text_bg_default;
     for (size_t i = 0; i < _ctx->rows * _ctx->cols; i++) {
         push_to_queue(_ctx, &empty, i % _ctx->cols, i / _ctx->cols);
     }
@@ -877,60 +902,69 @@ static void flanterm_fb_set_text_fg(struct flanterm_context *_ctx, size_t fg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->ansi_colours[fg];
+    ctx->text_fg_default = false;
 }
 
 static void flanterm_fb_set_text_bg(struct flanterm_context *_ctx, size_t bg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = ctx->ansi_colours[bg];
+    ctx->text_bg_default = false;
 }
 
 static void flanterm_fb_set_text_fg_bright(struct flanterm_context *_ctx, size_t fg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->ansi_bright_colours[fg];
+    ctx->text_fg_default = false;
 }
 
 static void flanterm_fb_set_text_bg_bright(struct flanterm_context *_ctx, size_t bg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = ctx->ansi_bright_colours[bg];
+    ctx->text_bg_default = false;
 }
 
 static void flanterm_fb_set_text_fg_rgb(struct flanterm_context *_ctx, uint32_t fg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = convert_colour(_ctx, fg);
+    ctx->text_fg_default = false;
 }
 
 static void flanterm_fb_set_text_bg_rgb(struct flanterm_context *_ctx, uint32_t bg) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = convert_colour(_ctx, bg);
+    ctx->text_bg_default = false;
 }
 
 static void flanterm_fb_set_text_fg_default(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->default_fg;
+    ctx->text_fg_default = false;
 }
 
 static void flanterm_fb_set_text_bg_default(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
-    ctx->text_bg = 0xffffffff;
+    ctx->text_bg_default = true;
 }
 
 static void flanterm_fb_set_text_fg_default_bright(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_fg = ctx->default_fg_bright;
+    ctx->text_fg_default = false;
 }
 
 static void flanterm_fb_set_text_bg_default_bright(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     ctx->text_bg = ctx->default_bg_bright;
+    ctx->text_bg_default = false;
 }
 
 static void draw_cursor(struct flanterm_context *_ctx) {
@@ -952,6 +986,9 @@ static void draw_cursor(struct flanterm_context *_ctx) {
     uint32_t tmp = c.fg;
     c.fg = c.bg;
     c.bg = tmp;
+    bool tmp_default = c.fg_default;
+    c.fg_default = c.bg_default;
+    c.bg_default = tmp_default;
     ctx->plot_char(_ctx, &c, ctx->cursor_x, ctx->cursor_y);
     if (q != NULL) {
         ctx->grid[i] = q->c;
@@ -1016,6 +1053,8 @@ static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
     ch.c  = c;
     ch.fg = ctx->text_fg;
     ch.bg = ctx->text_bg;
+    ch.fg_default = ctx->text_fg_default;
+    ch.bg_default = ctx->text_bg_default;
     push_to_queue(_ctx, &ch, ctx->cursor_x++, ctx->cursor_y);
 }
 
@@ -1269,9 +1308,12 @@ struct flanterm_context *flanterm_fb_init(
     }
 
     ctx->text_fg = ctx->default_fg;
-    ctx->text_bg = 0xffffffff;
+    ctx->text_fg_default = false;
+    ctx->text_bg_default = true;
     ctx->saved_state_text_fg = ctx->text_fg;
     ctx->saved_state_text_bg = ctx->text_bg;
+    ctx->saved_state_text_fg_default = ctx->text_fg_default;
+    ctx->saved_state_text_bg_default = ctx->text_bg_default;
 
     ctx->rotation = rotation;
 
@@ -1391,6 +1433,8 @@ struct flanterm_context *flanterm_fb_init(
         ctx->grid[i].c = ' ';
         ctx->grid[i].fg = ctx->text_fg;
         ctx->grid[i].bg = ctx->text_bg;
+        ctx->grid[i].fg_default = ctx->text_fg_default;
+        ctx->grid[i].bg_default = ctx->text_bg_default;
     }
 
     if (mul_size_overflow(_ctx->rows, _ctx->cols, &ctx->queue_size) ||
