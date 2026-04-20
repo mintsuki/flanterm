@@ -713,6 +713,14 @@ static void control_sequence_parse(struct flanterm_context *ctx, uint8_t c) {
     }
 
     if (ctx->dec_private == true) {
+        // Intermediate bytes (0x20-0x2F) don't terminate the CSI; they
+        // just mean we don't recognize the sequence (e.g. DECRQM "CSI ? Ps $ p").
+        // Wait for the real final byte and drop it.
+        if (c >= 0x20 && c <= 0x2F) {
+            ctx->dec_private = false;
+            ctx->csi_unhandled = true;
+            return;
+        }
         dec_private_parse(ctx, c);
         goto cleanup;
     }
