@@ -55,6 +55,11 @@
 void *memset(void *, int, size_t);
 void *memcpy(void *, const void *, size_t);
 
+#if defined(__GNUC__) || defined(__clang__)
+#define memset __builtin_memset
+#define memcpy __builtin_memcpy
+#endif
+
 static bool mul_size_overflow(size_t a, size_t b, size_t *out) {
     if (a != 0 && b > SIZE_MAX / a) {
         return true;
