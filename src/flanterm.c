@@ -121,8 +121,6 @@ void flanterm_context_reinit(struct flanterm_context *ctx) {
     ctx->saved_state_charsets[1] = CHARSET_DEC_SPECIAL;
     ctx->saved_state_current_primary = (size_t)-1;
     ctx->saved_state_current_bg = (size_t)-1;
-    ctx->saved_state_scroll_top_margin = 0;
-    ctx->saved_state_scroll_bottom_margin = ctx->rows;
     ctx->last_printed_char = ' ';
     ctx->last_was_graphic = false;
     ctx->scroll_top_margin = 0;
@@ -489,8 +487,6 @@ static void dec_private_parse(struct flanterm_context *ctx, uint8_t c) {
             case 1049:
                 if (set) {
                     save_state(ctx);
-                    ctx->scroll_top_margin = 0;
-                    ctx->scroll_bottom_margin = ctx->rows;
                     ctx->clear(ctx, true);
                 } else {
                     ctx->clear(ctx, true);
@@ -1095,8 +1091,6 @@ static void restore_state(struct flanterm_context *ctx) {
     ctx->charsets[1] = ctx->saved_state_charsets[1];
     ctx->current_primary = ctx->saved_state_current_primary;
     ctx->current_bg = ctx->saved_state_current_bg;
-    ctx->scroll_top_margin = ctx->saved_state_scroll_top_margin;
-    ctx->scroll_bottom_margin = ctx->saved_state_scroll_bottom_margin;
 
     ctx->restore_state(ctx);
 }
@@ -1113,8 +1107,6 @@ static void save_state(struct flanterm_context *ctx) {
     ctx->saved_state_charsets[1] = ctx->charsets[1];
     ctx->saved_state_current_primary = ctx->current_primary;
     ctx->saved_state_current_bg = ctx->current_bg;
-    ctx->saved_state_scroll_top_margin = ctx->scroll_top_margin;
-    ctx->saved_state_scroll_bottom_margin = ctx->scroll_bottom_margin;
 }
 
 static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
