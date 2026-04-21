@@ -1964,7 +1964,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
         return;
     }
 
-    if (ctx->unicode_remaining != 0) {
+    if (ctx->escape == false && ctx->unicode_remaining != 0) {
         if ((c & 0xc0) != 0x80) {
             bool already_errored = ctx->code_point > 0x10ffff;
             ctx->unicode_remaining = 0;
@@ -2032,7 +2032,7 @@ static void flanterm_putchar(struct flanterm_context *ctx, uint8_t c) {
     }
 
 unicode_error:
-    if (c >= 0xc2 && c <= 0xf4) {
+    if (ctx->escape == false && c >= 0xc2 && c <= 0xf4) {
         ctx->g_select = 0;
         if (c >= 0xc2 && c <= 0xdf) {
             ctx->unicode_remaining = 1;
