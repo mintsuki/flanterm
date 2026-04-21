@@ -1861,6 +1861,9 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x25fc: return 0xfe; // ◼ → ■
 
         // Typographic punctuation
+        case 0x2010: return 0x2d; // ‐ (hyphen) → -
+        case 0x2011: return 0x2d; // ‑ (non-breaking hyphen) → -
+        case 0x2012: return 0x2d; // ‒ (figure dash) → -
         case 0x2013: return 0x2d; // – (en dash) → -
         case 0x2014: return 0x2d; // — (em dash) → -
         case 0x2018: return 0x27; // ' (left single quote) → '
@@ -1886,6 +1889,7 @@ static int unicode_to_cp437(uint64_t code_point) {
         case 0x2211: return 0xe4; // ∑ → Σ
 
         // Horizontal line extension
+        case 0x2015: return 0xc4; // ― (horizontal bar) → ─
         case 0x23af: return 0xc4; // ⎯ → ─
 
         // Media transport symbols
