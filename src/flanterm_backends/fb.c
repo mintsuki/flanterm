@@ -72,9 +72,14 @@ static bool mul_size_overflow(size_t a, size_t b, size_t *out) {
 
 #ifndef FLANTERM_FB_BUMP_ALLOC_POOL_SIZE
 #define FLANTERM_FB_BUMP_ALLOC_POOL_SIZE 873000
+#endif
 
-#define FLANTERM_FB_WIDTH_LIMIT 1920
-#define FLANTERM_FB_HEIGHT_LIMIT 1200
+#ifndef FLANTERM_FB_BUMP_ALLOC_ASPECT_WIDTH
+#define FLANTERM_FB_BUMP_ALLOC_ASPECT_WIDTH 16
+#endif
+
+#ifndef FLANTERM_FB_BUMP_ALLOC_ASPECT_HEIGHT
+#define FLANTERM_FB_BUMP_ALLOC_ASPECT_HEIGHT 10
 #endif
 
 static uint8_t bump_alloc_pool[FLANTERM_FB_BUMP_ALLOC_POOL_SIZE];
@@ -104,6 +109,69 @@ static void *bump_alloc(size_t s) {
 }
 
 static bool bump_allocated_instance = false;
+
+/* Compute the largest terminal with aspect ratio aw:ah (W = aw*k, H = ah*k)
+ * that the bump pool can hold assuming the built-in 8x16 font with its forced
+ * 1-pixel spacing (i.e. a 9x16 cell), so that the default quick-start path
+ * always fits. A custom font with a smaller glyph may make bump_alloc return
+ * NULL at init time, matching the pre-auto-calc hardcoded-limit behaviour.
+ * aw and ah are first reduced by their GCD so that k parameterises the
+ * tightest possible integer grid. */
+static void bump_pool_limits(size_t *width_limit, size_t *height_limit) {
+    const size_t fixed_bytes =
+        sizeof(struct flanterm_fb_context) +
+        FLANTERM_FB_FONT_GLYPHS * 16 +                    /* font_bits  */
+        FLANTERM_FB_FONT_GLYPHS * 16 * 9 * sizeof(bool) + /* font_bool  */
+        7 * 16;                                           /* bump alignment padding */
+
+    const size_t per_cell_bytes =
+        sizeof(struct flanterm_fb_char) +
+        sizeof(struct flanterm_fb_queue_item) +
+        sizeof(struct flanterm_fb_queue_item *);
+
+    const size_t glyph_w = 9;
+    const size_t glyph_h = 16;
+
+    size_t aw = FLANTERM_FB_BUMP_ALLOC_ASPECT_WIDTH;
+    size_t ah = FLANTERM_FB_BUMP_ALLOC_ASPECT_HEIGHT;
+    {
+        size_t a = aw, b = ah;
+        while (b != 0) {
+            size_t t = b;
+            b = a % b;
+            a = t;
+        }
+        if (a != 0) {
+            aw /= a;
+            ah /= a;
+        }
+    }
+
+    size_t usable = FLANTERM_FB_BUMP_ALLOC_POOL_SIZE > fixed_bytes
+        ? FLANTERM_FB_BUMP_ALLOC_POOL_SIZE - fixed_bytes
+        : 0;
+    size_t cap_cells = per_cell_bytes != 0 ? usable / per_cell_bytes : 0;
+
+    /* Find the largest k for which the integer-floor cell count
+     * (aw*k / glyph_w) * (ah*k / glyph_h) still fits in cap_cells. Grows
+     * monotonically with k; step from 0 upward, guarding against overflow
+     * so the loop always terminates. */
+    size_t k = 0;
+    if (aw != 0 && ah != 0 && cap_cells != 0) {
+        for (;;) {
+            size_t next = k + 1;
+            size_t cells_w = aw * next / glyph_w;
+            size_t cells_h = ah * next / glyph_h;
+            if (cells_h != 0 && cells_w > (size_t)-1 / cells_h) break;
+            size_t cells = cells_w * cells_h;
+            if (cells > cap_cells) break;
+            k = next;
+        }
+    }
+
+    *width_limit  = aw * k;
+    *height_limit = ah * k;
+}
 
 #endif
 
@@ -1201,9 +1269,11 @@ struct flanterm_context *flanterm_fb_init(
         }
         _malloc = bump_alloc;
         // Limit terminal size if needed
-        if (width > FLANTERM_FB_WIDTH_LIMIT || height > FLANTERM_FB_HEIGHT_LIMIT) {
-            size_t width_limit = width > FLANTERM_FB_WIDTH_LIMIT ? FLANTERM_FB_WIDTH_LIMIT : width;
-            size_t height_limit = height > FLANTERM_FB_HEIGHT_LIMIT ? FLANTERM_FB_HEIGHT_LIMIT : height;
+        size_t fb_width_limit, fb_height_limit;
+        bump_pool_limits(&fb_width_limit, &fb_height_limit);
+        if (width > fb_width_limit || height > fb_height_limit) {
+            size_t width_limit = width > fb_width_limit ? fb_width_limit : width;
+            size_t height_limit = height > fb_height_limit ? fb_height_limit : height;
 
             // width/height are logical (post-rotation) dimensions. For the
             // centering offset, we need to map back to the physical layout.
