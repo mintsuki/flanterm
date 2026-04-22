@@ -43,11 +43,12 @@ extern "C" {
 #define FLANTERM_FB_FONT_GLYPHS 256
 
 struct flanterm_fb_char {
-    uint32_t c;
-    uint32_t fg;
-    uint32_t bg;
+    uint8_t c;
     bool fg_default;
     bool bg_default;
+    /* 1 byte implicit tail-of-first-word padding */
+    uint32_t fg;
+    uint32_t bg;
 };
 
 struct flanterm_fb_queue_item {
