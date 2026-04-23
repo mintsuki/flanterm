@@ -1636,4 +1636,7 @@ fail:
 void flanterm_fb_set_flush_callback(struct flanterm_context *_ctx, void (*flush_callback)(volatile void *address, size_t length)) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
     ctx->flush_callback = flush_callback;
+    if (flush_callback != NULL) {
+        flush_callback(ctx->framebuffer, ctx->pitch * ctx->phys_height);
+    }
 }
