@@ -542,9 +542,19 @@ static void osc_finalize(struct flanterm_context *ctx) {
         // Parse the leading OSC number and skip past the semicolon.
         uint64_t osc_num = 0;
         size_t i = 0;
+        bool overflow = false;
         while (i < ctx->osc_buf_i && ctx->osc_buf[i] >= '0' && ctx->osc_buf[i] <= '9') {
-            osc_num = osc_num * 10 + (ctx->osc_buf[i] - '0');
+            uint64_t digit = (uint64_t)(ctx->osc_buf[i] - '0');
+            if (osc_num > UINT64_MAX / 10
+             || (osc_num == UINT64_MAX / 10 && digit > UINT64_MAX % 10)) {
+                overflow = true;
+                break;
+            }
+            osc_num = osc_num * 10 + digit;
             i++;
+        }
+        if (overflow) {
+            return;
         }
         if (i < ctx->osc_buf_i && ctx->osc_buf[i] == ';') {
             i++;
@@ -2263,4 +2273,3 @@ void flanterm_clear(struct flanterm_context *ctx, bool move) {
         ctx->double_buffer_flush(ctx);
     }
 }
-
