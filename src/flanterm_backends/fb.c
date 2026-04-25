@@ -1130,30 +1130,62 @@ static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     uint32_t default_bg = ctx->default_bg;
+    const size_t stride_px = ctx->pitch / sizeof(uint32_t);
 
-    for (size_t y = 0; y < ctx->height; y++) {
-        for (size_t x = 0; x < ctx->width; x++) {
-            size_t px, py;
-            switch (ctx->rotation) {
-                default:
-                case FLANTERM_FB_ROTATE_0:
-                    px = x; py = y;
-                    break;
-                case FLANTERM_FB_ROTATE_90:
-                    px = ctx->height - 1 - y; py = x;
-                    break;
-                case FLANTERM_FB_ROTATE_180:
-                    px = ctx->width - 1 - x; py = ctx->height - 1 - y;
-                    break;
-                case FLANTERM_FB_ROTATE_270:
-                    px = y; py = ctx->width - 1 - x;
-                    break;
+#if (defined(__i386__) || defined(__x86_64__)) && (defined(__GNUC__) || defined(__clang__))
+    if (ctx->rotation == FLANTERM_FB_ROTATE_0) {
+        const size_t w = ctx->width;
+        if (ctx->canvas != NULL) {
+            for (size_t y = 0; y < ctx->height; y++) {
+                volatile uint32_t *dst = ctx->framebuffer + y * stride_px;
+                const uint32_t *src = ctx->canvas + y * w;
+                size_t n = w;
+                __asm__ __volatile__ (
+                    "rep movsl"
+                    : "+D"(dst), "+S"(src), "+c"(n)
+                    :
+                    : "memory"
+                );
             }
+        } else {
+            for (size_t y = 0; y < ctx->height; y++) {
+                volatile uint32_t *dst = ctx->framebuffer + y * stride_px;
+                size_t n = w;
+                __asm__ __volatile__ (
+                    "rep stosl"
+                    : "+D"(dst), "+c"(n)
+                    : "a"(default_bg)
+                    : "memory"
+                );
+            }
+        }
+    } else
+#endif
+    {
+        for (size_t y = 0; y < ctx->height; y++) {
+            for (size_t x = 0; x < ctx->width; x++) {
+                size_t px, py;
+                switch (ctx->rotation) {
+                    default:
+                    case FLANTERM_FB_ROTATE_0:
+                        px = x; py = y;
+                        break;
+                    case FLANTERM_FB_ROTATE_90:
+                        px = ctx->height - 1 - y; py = x;
+                        break;
+                    case FLANTERM_FB_ROTATE_180:
+                        px = ctx->width - 1 - x; py = ctx->height - 1 - y;
+                        break;
+                    case FLANTERM_FB_ROTATE_270:
+                        px = y; py = ctx->width - 1 - x;
+                        break;
+                }
 
-            if (ctx->canvas != NULL) {
-                ctx->framebuffer[py * (ctx->pitch / sizeof(uint32_t)) + px] = ctx->canvas[y * ctx->width + x];
-            } else {
-                ctx->framebuffer[py * (ctx->pitch / sizeof(uint32_t)) + px] = default_bg;
+                if (ctx->canvas != NULL) {
+                    ctx->framebuffer[py * stride_px + px] = ctx->canvas[y * ctx->width + x];
+                } else {
+                    ctx->framebuffer[py * stride_px + px] = default_bg;
+                }
             }
         }
     }
