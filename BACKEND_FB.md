@@ -19,8 +19,9 @@ Add `flanterm_backends/fb.c` to the build and include
 
 ```c
 struct flanterm_context *flanterm_fb_init(
-    void *(*_malloc)(size_t),
-    void (*_free)(void *, size_t),
+    void *(*_malloc)(void *, size_t),
+    void (*_free)(void *, void *, size_t),
+    void *alloc_ctx,
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
     uint8_t red_mask_size, uint8_t red_mask_shift,
     uint8_t green_mask_size, uint8_t green_mask_shift,
@@ -42,6 +43,7 @@ invalid framebuffer geometry, unsupported pixel format, etc.).
 | Parameter | Meaning |
 | --- | --- |
 | `_malloc`, `_free` | Client allocator. If both are `NULL`, the built-in bump allocator is used (only one live instance at a time; see [below](#allocator-and-the-built-in-bump-allocator)). |
+| `alloc_ctx` | Passed as first argument to `_malloc` and `_free` |
 | `framebuffer` | The 32-bit framebuffer, writable as `uint32_t *`. |
 | `width`, `height` | Physical framebuffer dimensions in pixels. Swapped internally for `ROTATE_90`/`ROTATE_270` (see [Rotation](#rotation)). |
 | `pitch` | Physical scanline stride in bytes. Must be a multiple of `sizeof(uint32_t)` and at least `width * 4`. |
@@ -104,6 +106,8 @@ mode:
 With a custom allocator, `_malloc` is used for every allocation and the
 paired `_free` runs when freeing. `_free` receives the allocation
 size as its second argument.
+
+Both `_malloc` and `_free` receive the `alloc_ctx` as first argument.
 
 ## Flush callback
 

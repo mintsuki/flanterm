@@ -59,7 +59,7 @@ struct flanterm_context;
 void flanterm_write(struct flanterm_context *ctx, const char *buf, size_t count);
 void flanterm_flush(struct flanterm_context *ctx);
 void flanterm_full_refresh(struct flanterm_context *ctx);
-void flanterm_deinit(struct flanterm_context *ctx, void (*_free)(void *ptr, size_t size));
+void flanterm_deinit(struct flanterm_context *ctx, void (*_free)(void *ctx, void *ptr, size_t size), void *alloc_ctx);
 
 void flanterm_get_dimensions(struct flanterm_context *ctx, size_t *cols, size_t *rows);
 void flanterm_set_autoflush(struct flanterm_context *ctx, bool state);

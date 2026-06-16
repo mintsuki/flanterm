@@ -116,7 +116,7 @@ struct flanterm_context {
     void (*restore_state)(struct flanterm_context *);
     void (*double_buffer_flush)(struct flanterm_context *);
     void (*full_refresh)(struct flanterm_context *);
-    void (*deinit)(struct flanterm_context *, void (*)(void *, size_t));
+    void (*deinit)(struct flanterm_context *, void (*)(void *, void *, size_t), void *);
 
     /* to be set by client */
 

@@ -43,10 +43,10 @@ Redraws from the cell grid, bypassing the dirty-queue. Appropriate after the
 backing surface has been clobbered.
 
 ```c
-void flanterm_deinit(struct flanterm_context *ctx, void (*_free)(void *, size_t));
+void flanterm_deinit(struct flanterm_context *ctx, void (*_free)(void *, void *, size_t), void *alloc_ctx);
 ```
-Tears down the context. `_free` must match the allocator passed at init or
-be `NULL` if applicable.
+Tears down the context. `_free` and `alloc_ctx` must match the allocator passed
+at init or be `NULL` if applicable.
 
 ```c
 void flanterm_get_dimensions(struct flanterm_context *ctx, size_t *cols, size_t *rows);
