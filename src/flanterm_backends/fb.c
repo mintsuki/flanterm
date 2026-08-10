@@ -86,7 +86,9 @@ static uint8_t bump_alloc_pool[FLANTERM_FB_BUMP_ALLOC_POOL_SIZE];
 static size_t bump_alloc_ptr = 0;
 static bool bump_alloc_base_offset_added = false;
 
-static void *bump_alloc(size_t s) {
+static void *bump_alloc(void *ctx, size_t s) {
+    (void)ctx;
+
     if (!bump_alloc_base_offset_added) {
         if ((uintptr_t)bump_alloc_pool & 0xf) {
             bump_alloc_ptr += 0x10 - ((uintptr_t)bump_alloc_pool & 0xf);
@@ -1182,7 +1184,7 @@ static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
     }
 }
 
-static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void *, size_t)) {
+static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void *, void *, size_t), void *alloc_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
 
     if (_free == NULL) {
@@ -1196,22 +1198,23 @@ static void flanterm_fb_deinit(struct flanterm_context *_ctx, void (*_free)(void
         return;
     }
 
-    _free(ctx->font_bits, ctx->font_bits_size);
-    _free(ctx->font_bool, ctx->font_bool_size);
-    _free(ctx->grid, ctx->grid_size);
-    _free(ctx->queue, ctx->queue_size);
-    _free(ctx->map, ctx->map_size);
+    _free(alloc_ctx, ctx->font_bits, ctx->font_bits_size);
+    _free(alloc_ctx, ctx->font_bool, ctx->font_bool_size);
+    _free(alloc_ctx, ctx->grid, ctx->grid_size);
+    _free(alloc_ctx, ctx->queue, ctx->queue_size);
+    _free(alloc_ctx, ctx->map, ctx->map_size);
 
     if (ctx->canvas != NULL) {
-        _free(ctx->canvas, ctx->canvas_size);
+        _free(alloc_ctx, ctx->canvas, ctx->canvas_size);
     }
 
-    _free(ctx, sizeof(struct flanterm_fb_context));
+    _free(alloc_ctx, ctx, sizeof(struct flanterm_fb_context));
 }
 
 struct flanterm_context *flanterm_fb_init(
-    void *(*_malloc)(size_t),
-    void (*_free)(void *, size_t),
+    void *(*_malloc)(void *, size_t),
+    void (*_free)(void *, void *, size_t),
+    void *alloc_ctx,
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
     uint8_t red_mask_size, uint8_t red_mask_shift,
     uint8_t green_mask_size, uint8_t green_mask_shift,
@@ -1317,7 +1320,7 @@ struct flanterm_context *flanterm_fb_init(
     }
 
     struct flanterm_fb_context *ctx = NULL;
-    ctx = _malloc(sizeof(struct flanterm_fb_context));
+    ctx = _malloc(alloc_ctx, sizeof(struct flanterm_fb_context));
     if (ctx == NULL) {
         goto fail;
     }
@@ -1411,7 +1414,7 @@ struct flanterm_context *flanterm_fb_init(
         if (mul_size_overflow(font_height, (size_t)FLANTERM_FB_FONT_GLYPHS, &ctx->font_bits_size)) {
             goto fail;
         }
-        ctx->font_bits = _malloc(ctx->font_bits_size);
+        ctx->font_bits = _malloc(alloc_ctx, ctx->font_bits_size);
         if (ctx->font_bits == NULL) {
             goto fail;
         }
@@ -1421,7 +1424,7 @@ struct flanterm_context *flanterm_fb_init(
         ctx->font_height = font_height = 16;
         ctx->font_bits_size = FONT_BYTES;
         font_spacing = 1;
-        ctx->font_bits = _malloc(ctx->font_bits_size);
+        ctx->font_bits = _malloc(alloc_ctx, ctx->font_bits_size);
         if (ctx->font_bits == NULL) {
             goto fail;
         }
@@ -1440,7 +1443,7 @@ struct flanterm_context *flanterm_fb_init(
         mul_size_overflow(ctx->font_bool_size, sizeof(bool), &ctx->font_bool_size)) {
         goto fail;
     }
-    ctx->font_bool = _malloc(ctx->font_bool_size);
+    ctx->font_bool = _malloc(alloc_ctx, ctx->font_bool_size);
     if (ctx->font_bool == NULL) {
         goto fail;
     }
@@ -1504,7 +1507,7 @@ struct flanterm_context *flanterm_fb_init(
         mul_size_overflow(ctx->grid_size, sizeof(struct flanterm_fb_char), &ctx->grid_size)) {
         goto fail;
     }
-    ctx->grid = _malloc(ctx->grid_size);
+    ctx->grid = _malloc(alloc_ctx, ctx->grid_size);
     if (ctx->grid == NULL) {
         goto fail;
     }
@@ -1520,7 +1523,7 @@ struct flanterm_context *flanterm_fb_init(
         mul_size_overflow(ctx->queue_size, sizeof(struct flanterm_fb_queue_item), &ctx->queue_size)) {
         goto fail;
     }
-    ctx->queue = _malloc(ctx->queue_size);
+    ctx->queue = _malloc(alloc_ctx, ctx->queue_size);
     if (ctx->queue == NULL) {
         goto fail;
     }
@@ -1531,7 +1534,7 @@ struct flanterm_context *flanterm_fb_init(
         mul_size_overflow(ctx->map_size, sizeof(struct flanterm_fb_queue_item *), &ctx->map_size)) {
         goto fail;
     }
-    ctx->map = _malloc(ctx->map_size);
+    ctx->map = _malloc(alloc_ctx, ctx->map_size);
     if (ctx->map == NULL) {
         goto fail;
     }
@@ -1542,7 +1545,7 @@ struct flanterm_context *flanterm_fb_init(
             mul_size_overflow(ctx->canvas_size, sizeof(uint32_t), &ctx->canvas_size)) {
             goto fail;
         }
-        ctx->canvas = _malloc(ctx->canvas_size);
+        ctx->canvas = _malloc(alloc_ctx, ctx->canvas_size);
         if (ctx->canvas == NULL) {
             goto fail;
         }
@@ -1625,25 +1628,25 @@ fail:
     }
 
     if (ctx->canvas != NULL) {
-        _free(ctx->canvas, ctx->canvas_size);
+        _free(alloc_ctx, ctx->canvas, ctx->canvas_size);
     }
     if (ctx->map != NULL) {
-        _free(ctx->map, ctx->map_size);
+        _free(alloc_ctx, ctx->map, ctx->map_size);
     }
     if (ctx->queue != NULL) {
-        _free(ctx->queue, ctx->queue_size);
+        _free(alloc_ctx, ctx->queue, ctx->queue_size);
     }
     if (ctx->grid != NULL) {
-        _free(ctx->grid, ctx->grid_size);
+        _free(alloc_ctx, ctx->grid, ctx->grid_size);
     }
     if (ctx->font_bool != NULL) {
-        _free(ctx->font_bool, ctx->font_bool_size);
+        _free(alloc_ctx, ctx->font_bool, ctx->font_bool_size);
     }
     if (ctx->font_bits != NULL) {
-        _free(ctx->font_bits, ctx->font_bits_size);
+        _free(alloc_ctx, ctx->font_bits, ctx->font_bits_size);
     }
     if (ctx != NULL) {
-        _free(ctx, sizeof(struct flanterm_fb_context));
+        _free(alloc_ctx, ctx, sizeof(struct flanterm_fb_context));
     }
 
     return NULL;

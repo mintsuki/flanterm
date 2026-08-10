@@ -51,8 +51,9 @@ extern "C" {
 
 struct flanterm_context *flanterm_fb_init(
     /* If _malloc and _free are nulled, use the bump allocated instance (1 use only). */
-    void *(*_malloc)(size_t size),
-    void (*_free)(void *ptr, size_t size),
+    void *(*_malloc)(void *ctx, size_t size),
+    void (*_free)(void *ctx, void *ptr, size_t size),
+    void *alloc_ctx,
     uint32_t *framebuffer, size_t width, size_t height, size_t pitch,
     uint8_t red_mask_size, uint8_t red_mask_shift,
     uint8_t green_mask_size, uint8_t green_mask_shift,

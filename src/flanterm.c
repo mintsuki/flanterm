@@ -2133,8 +2133,8 @@ void flanterm_full_refresh(struct flanterm_context *ctx) {
     ctx->full_refresh(ctx);
 }
 
-void flanterm_deinit(struct flanterm_context *ctx, void (*_free)(void *, size_t)) {
-    ctx->deinit(ctx, _free);
+void flanterm_deinit(struct flanterm_context *ctx, void (*_free)(void *, void *, size_t), void *alloc_ctx) {
+    ctx->deinit(ctx, _free, alloc_ctx);
 }
 
 void flanterm_get_dimensions(struct flanterm_context *ctx, size_t *cols, size_t *rows) {
