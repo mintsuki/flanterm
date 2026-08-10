@@ -67,7 +67,9 @@ struct flanterm_context *flanterm_fb_init(
     size_t font_scale_x, size_t font_scale_y,
     size_t margin,
     /* One of FLANTERM_FB_ROTATE_* values. */
-    int rotation
+    int rotation,
+    /* If false, autoflush starts off and the first flush paints the framebuffer. */
+    bool autoflush
 );
 
 void flanterm_fb_set_flush_callback(struct flanterm_context *ctx, void (*flush_callback)(volatile void *address, size_t length));

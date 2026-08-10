@@ -125,6 +125,8 @@ struct flanterm_fb_context {
 
     size_t old_cursor_x;
     size_t old_cursor_y;
+
+    bool full_refresh_pending;
 };
 
 #ifdef __cplusplus

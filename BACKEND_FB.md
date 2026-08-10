@@ -32,7 +32,8 @@ struct flanterm_context *flanterm_fb_init(
     void *font, size_t font_width, size_t font_height, size_t font_spacing,
     size_t font_scale_x, size_t font_scale_y,
     size_t margin,
-    int rotation
+    int rotation,
+    bool autoflush
 );
 ```
 
@@ -58,6 +59,7 @@ invalid framebuffer geometry, unsupported pixel format, etc.).
 | `font_scale_x`, `font_scale_y` | Integer glyph scale. `0`, `0` enables auto-scale: `2x` at logical dimensions >= 2560x1440, `4x` at >= 5120x2880. |
 | `margin` | Margin pixels on each side of the text area. `margin * 2 < logical_width` and `margin * 2 < logical_height` must hold, or init fails. |
 | `rotation` | One of `FLANTERM_FB_ROTATE_0`, `FLANTERM_FB_ROTATE_90`, `FLANTERM_FB_ROTATE_180`, `FLANTERM_FB_ROTATE_270`. |
+| `autoflush` | Initial autoflush state. `false` also defers the initial full refresh, leaving the framebuffer as it was found until the first flush paints it. |
 
 Palettes, `default_*` colours, `font` data, and `canvas` pixels are copied
 into the context during init; the input buffers do not need to outlive the

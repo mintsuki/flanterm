@@ -1064,8 +1064,14 @@ static void draw_cursor(struct flanterm_context *_ctx) {
     }
 }
 
+static void flanterm_fb_full_refresh(struct flanterm_context *_ctx);
+
 static void flanterm_fb_double_buffer_flush(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
+
+    if (ctx->full_refresh_pending) {
+        flanterm_fb_full_refresh(_ctx);
+    }
 
     if (_ctx->cursor_enabled) {
         draw_cursor(_ctx);
@@ -1128,6 +1134,8 @@ static void flanterm_fb_raw_putchar(struct flanterm_context *_ctx, uint8_t c) {
 
 static void flanterm_fb_full_refresh(struct flanterm_context *_ctx) {
     struct flanterm_fb_context *ctx = (void *)_ctx;
+
+    ctx->full_refresh_pending = false;
 
     uint32_t default_bg = ctx->default_bg;
 
@@ -1215,7 +1223,8 @@ struct flanterm_context *flanterm_fb_init(
     void *font, size_t font_width, size_t font_height, size_t font_spacing,
     size_t font_scale_x, size_t font_scale_y,
     size_t margin,
-    int rotation
+    int rotation,
+    bool autoflush
 ) {
     size_t phys_height = height;
 
@@ -1581,7 +1590,14 @@ struct flanterm_context *flanterm_fb_init(
     _ctx->deinit = flanterm_fb_deinit;
 
     flanterm_context_reinit(_ctx);
-    flanterm_fb_full_refresh(_ctx);
+    _ctx->autoflush = autoflush;
+
+    // Refreshing here would overwrite a framebuffer the caller wants kept.
+    if (autoflush) {
+        flanterm_fb_full_refresh(_ctx);
+    } else {
+        ctx->full_refresh_pending = true;
+    }
 
 #ifndef FLANTERM_FB_DISABLE_BUMP_ALLOC
     if (_malloc == bump_alloc) {
