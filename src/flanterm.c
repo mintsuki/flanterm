@@ -1165,6 +1165,12 @@ static void escape_parse(struct flanterm_context *ctx, uint8_t c) {
         case '8':
             restore_state(ctx);
             break;
+        case '=':
+        case '>':
+            if (ctx->callback != NULL) {
+                ctx->callback(ctx, FLANTERM_CB_KEYPAD_MODE, 0, 0, c);
+            }
+            break;
         case 'c':
             if (ctx->reverse_video) {
                 ctx->swap_palette(ctx);
